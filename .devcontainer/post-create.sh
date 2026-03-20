@@ -7,6 +7,10 @@ echo "🚀 Setting up prisma-strong-migrations development environment..."
 # /workspaces/ is owned by root but we run as node, so we register an exception.
 git config --global --add safe.directory /workspaces/prisma-strong-migrations
 
+# Make git-secrets available as a git subcommand (git secrets).
+mkdir -p /home/node/.local/bin
+ln -sf /home/node/bin/git-secrets /home/node/.local/bin/git-secrets
+
 # Install dependencies if package.json exists.
 # pnpm may fail on first run due to a symlink race condition; retry once if needed.
 if [ -f "package.json" ]; then
