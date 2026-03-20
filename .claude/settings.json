@@ -1,0 +1,53 @@
+{
+  "$schema": "https://claude.ai/schemas/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Read files",
+      "Write files",
+      "List directory",
+      "Search files",
+      "Execute command: vp *",
+      "Execute command: npm *",
+      "Execute command: npx *",
+      "Execute command: git *",
+      "Execute command: cat *",
+      "Execute command: ls *",
+      "Execute command: grep *",
+      "Execute command: head *",
+      "Execute command: tail *",
+      "Execute command: wc *",
+      "Execute command: echo *",
+      "Execute command: mkdir *",
+      "Execute command: touch *"
+    ],
+    "deny": [
+      "Execute command: rm -rf /*",
+      "Execute command: rm -rf ~/*",
+      "Execute command: rm -rf .*",
+      "Execute command: sudo *",
+      "Execute command: chmod 777 *",
+      "Execute command: curl * | bash",
+      "Execute command: wget * | bash",
+      "Execute command: eval *",
+      "Execute command: exec *",
+      "Execute command: kill *",
+      "Execute command: pkill *",
+      "Execute command: shutdown *",
+      "Execute command: reboot *",
+      "Execute command: dd *",
+      "Execute command: mkfs *",
+      "Execute command: fdisk *",
+      "Execute command: mount *",
+      "Execute command: umount *"
+    ]
+  },
+  "context": {
+    "include": [
+      "AGENTS.md",
+      "README.md",
+      "docs/**/*.md",
+      "src/**/*.ts",
+      "integration-tests/**/*"
+    ]
+  }
+}
