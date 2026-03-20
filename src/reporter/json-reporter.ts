@@ -1,20 +1,7 @@
 import type { CheckResult } from "../rules/types";
+import type { JsonReport, ReportItem } from "./types";
 
-export interface ReportItem {
-  ruleName: string;
-  severity: "error" | "warning";
-  migrationPath: string;
-  line: number;
-  message: string;
-  suggestion: string;
-}
-
-export interface JsonReport {
-  errors: ReportItem[];
-  warnings: ReportItem[];
-  totalErrors: number;
-  totalWarnings: number;
-}
+export type { JsonReport, ReportItem };
 
 export const jsonReport = (results: CheckResult[]): JsonReport => {
   const toItem = (result: CheckResult): ReportItem => ({
