@@ -6,6 +6,7 @@ import { check } from "./checker";
 import { consoleReport } from "./reporter/console-reporter";
 import { jsonReport } from "./reporter/json-reporter";
 import { loadConfig } from "./config/loader";
+import { loadCustomRules } from "./rules/loader";
 import type { CheckResult } from "./rules/types";
 
 const program = new Command();
@@ -23,6 +24,10 @@ program
   .option("--no-fail", "exit with code 0 even if errors found")
   .action(async (migration: string | undefined, options) => {
     const config = await loadConfig(options.config);
+    if (config.customRulesDir) {
+      const customRules = await loadCustomRules(config.customRulesDir);
+      config.customRules = [...(config.customRules ?? []), ...customRules];
+    }
     const migrationsDir = resolve(config.migrationsDir ?? "./prisma/migrations");
     const ignoreMigrations = config.ignoreMigrations ?? [];
 
