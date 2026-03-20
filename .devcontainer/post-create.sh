@@ -3,10 +3,18 @@ set -e
 
 echo "🚀 Setting up prisma-strong-migrations development environment..."
 
-# Install dependencies if package.json exists
+# Fix: git refuses to operate in directories owned by a different user.
+# /workspaces/ is owned by root but we run as node, so we register an exception.
+git config --global --add safe.directory /workspaces/prisma-strong-migrations
+
+# Install dependencies if package.json exists.
+# pnpm may fail on first run due to a symlink race condition; retry once if needed.
 if [ -f "package.json" ]; then
     echo "📦 Installing dependencies..."
-    vp install
+    vp install || {
+        echo "⚠️  vp install failed, retrying..."
+        vp install
+    }
 fi
 
 echo "✅ Development environment setup complete!"
