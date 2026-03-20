@@ -1,32 +1,39 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const setNotNullRule: Rule = {
-  name: "set_not_null",
-  code: "011",
-  severity: "error",
-  description: "Setting NOT NULL on a column locks the table",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return statement.type === "alterTable" && statement.action === "alterColumnSetNotNull";
+}
 
-  detect: (stmt) => stmt.type === "alterTable" && stmt.action === "alterColumnSetNotNull",
+function message(statement: ParsedStatement): string {
+  return `Setting NOT NULL on column "${statement.column}" in table "${statement.table}" locks the table`;
+}
 
-  message: (stmt) =>
-    `Setting NOT NULL on column "${stmt.column}" in table "${stmt.table}" locks the table`,
-
-  suggestion: (stmt) =>
-    `
+function suggestion(statement: ParsedStatement): string {
+  return `
 ❌ Bad: Setting NOT NULL directly validates all existing rows and locks the table
 
 ✅ Good: Follow these steps:
    1. Add a CHECK constraint with NOT VALID to avoid full table scan:
-      ALTER TABLE "${stmt.table}" ADD CONSTRAINT "${stmt.table}_${stmt.column}_not_null"
-        CHECK ("${stmt.column}" IS NOT NULL) NOT VALID;
+      ALTER TABLE "${statement.table}" ADD CONSTRAINT "${statement.table}_${statement.column}_not_null"
+        CHECK ("${statement.column}" IS NOT NULL) NOT VALID;
    2. Validate the constraint in a separate transaction:
-      ALTER TABLE "${stmt.table}" VALIDATE CONSTRAINT "${stmt.table}_${stmt.column}_not_null";
+      ALTER TABLE "${statement.table}" VALIDATE CONSTRAINT "${statement.table}_${statement.column}_not_null";
    3. Then set NOT NULL (PostgreSQL 12+ will skip the scan if CHECK constraint exists):
-      ALTER TABLE "${stmt.table}" ALTER COLUMN "${stmt.column}" SET NOT NULL;
+      ALTER TABLE "${statement.table}" ALTER COLUMN "${statement.column}" SET NOT NULL;
    4. Drop the temporary check constraint:
-      ALTER TABLE "${stmt.table}" DROP CONSTRAINT "${stmt.table}_${stmt.column}_not_null";
+      ALTER TABLE "${statement.table}" DROP CONSTRAINT "${statement.table}_${statement.column}_not_null";
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line set_not_null
-`.trim(),
+`.trim();
+}
+
+export const setNotNullRule: Rule = {
+  name: "set_not_null",
+  severity: "error",
+  description: "Setting NOT NULL on a column locks the table",
+  detect,
+  message,
+  suggestion,
 };

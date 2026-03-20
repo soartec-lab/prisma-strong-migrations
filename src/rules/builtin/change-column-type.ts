@@ -1,23 +1,21 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const changeColumnTypeRule: Rule = {
-  name: "change_column_type",
-  code: "004",
-  severity: "error",
-  description: "Changing a column type may cause application errors",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return statement.type === "alterTable" && statement.action === "alterColumnType";
+}
 
-  detect: (stmt) => stmt.type === "alterTable" && stmt.action === "alterColumnType",
+function message(statement: ParsedStatement): string {
+  return `Changing type of column "${statement.column}" on table "${statement.table}" may cause application errors`;
+}
 
-  message: (stmt) =>
-    `Changing type of column "${stmt.column}" on table "${stmt.table}" may cause application errors`,
-
-  suggestion: (stmt) =>
-    `
+function suggestion(statement: ParsedStatement): string {
+  return `
 ❌ Bad: Changing a column type may cause errors if the application reads the column with the old type
 
 ✅ Good: Follow these steps:
    1. Add a new column with the desired type
-   2. Migrate the data from '${stmt.column}' to the new column
+   2. Migrate the data from '${statement.column}' to the new column
    3. Update your application code to use the new column
    4. Run 'npx prisma generate' to update Prisma Client
    5. Deploy the application code changes
@@ -25,5 +23,14 @@ export const changeColumnTypeRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line change_column_type
-`.trim(),
+`.trim();
+}
+
+export const changeColumnTypeRule: Rule = {
+  name: "change_column_type",
+  severity: "error",
+  description: "Changing a column type may cause application errors",
+  detect,
+  message,
+  suggestion,
 };

@@ -1,22 +1,20 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const removeColumnRule: Rule = {
-  name: "remove_column",
-  code: "001",
-  severity: "error",
-  description: "Removing a column may cause application errors",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return statement.type === "alterTable" && statement.action === "dropColumn";
+}
 
-  detect: (stmt) => stmt.type === "alterTable" && stmt.action === "dropColumn",
+function message(statement: ParsedStatement): string {
+  return `Removing column "${statement.column}" from table "${statement.table}" may cause errors in running application`;
+}
 
-  message: (stmt) =>
-    `Removing column "${stmt.column}" from table "${stmt.table}" may cause errors in running application`,
-
-  suggestion: (stmt) =>
-    `
+function suggestion(statement: ParsedStatement): string {
+  return `
 ❌ Bad: Removing a column immediately can cause errors if the application still references it
 
 ✅ Good: Follow these steps:
-   1. Remove all usages of '${stmt.column}' field from your application code
+   1. Remove all usages of '${statement.column}' field from your application code
    2. Run 'npx prisma generate' to update Prisma Client
    3. Deploy the application code changes
    4. Then apply this migration
@@ -25,5 +23,14 @@ export const removeColumnRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line remove_column
-`.trim(),
+`.trim();
+}
+
+export const removeColumnRule: Rule = {
+  name: "remove_column",
+  severity: "error",
+  description: "Removing a column may cause application errors",
+  detect,
+  message,
+  suggestion,
 };

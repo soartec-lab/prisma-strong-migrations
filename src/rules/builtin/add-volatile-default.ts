@@ -1,23 +1,20 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addVolatileDefaultRule: Rule = {
-  name: "add_volatile_default",
-  code: "013",
-  severity: "error",
-  description: "Adding a column with a volatile default value may cause issues",
+const VOLATILE_FUNCTION_PATTERN =
+  /\b(gen_random_uuid|now|random|clock_timestamp|timeofday|transaction_timestamp|statement_timestamp)\s*\(/i;
 
-  detect: (stmt) => {
-    if (stmt.type !== "alterTable" || stmt.action !== "addColumn") return false;
-    const volatilePattern =
-      /\b(gen_random_uuid|now|random|clock_timestamp|timeofday|transaction_timestamp|statement_timestamp)\s*\(/i;
-    return volatilePattern.test(stmt.raw);
-  },
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  if (statement.type !== "alterTable" || statement.action !== "addColumn") return false;
+  return VOLATILE_FUNCTION_PATTERN.test(statement.raw);
+}
 
-  message: (stmt) =>
-    `Adding column "${stmt.column}" with a volatile default value may cause issues`,
+function message(statement: ParsedStatement): string {
+  return `Adding column "${statement.column}" with a volatile default value may cause issues`;
+}
 
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Adding a column with a volatile default (e.g., gen_random_uuid(), now()) rewrites the
    entire table and locks it in older PostgreSQL versions
 
@@ -30,5 +27,14 @@ export const addVolatileDefaultRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_volatile_default
-`.trim(),
+`.trim();
+}
+
+export const addVolatileDefaultRule: Rule = {
+  name: "add_volatile_default",
+  severity: "error",
+  description: "Adding a column with a volatile default value may cause issues",
+  detect,
+  message,
+  suggestion,
 };

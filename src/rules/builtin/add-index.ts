@@ -1,17 +1,16 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addIndexRule: Rule = {
-  name: "add_index",
-  code: "005",
-  severity: "error",
-  description: "Adding an index without CONCURRENTLY locks the table",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return statement.type === "createIndex" && statement.concurrently === false;
+}
 
-  detect: (stmt) => stmt.type === "createIndex" && stmt.concurrently === false,
+function message(statement: ParsedStatement): string {
+  return `Adding index "${statement.indexName}" without CONCURRENTLY locks the table`;
+}
 
-  message: (stmt) => `Adding index "${stmt.indexName}" without CONCURRENTLY locks the table`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Creating an index without CONCURRENTLY acquires a lock that prevents reads and writes
 
 ✅ Good: Use CREATE INDEX CONCURRENTLY to avoid table lock:
@@ -21,5 +20,14 @@ Note: CONCURRENTLY cannot be used inside a transaction block.
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_index
-`.trim(),
+`.trim();
+}
+
+export const addIndexRule: Rule = {
+  name: "add_index",
+  severity: "error",
+  description: "Adding an index without CONCURRENTLY locks the table",
+  detect,
+  message,
+  suggestion,
 };

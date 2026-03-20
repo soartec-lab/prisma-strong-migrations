@@ -1,22 +1,21 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addForeignKeyRule: Rule = {
-  name: "add_foreign_key",
-  code: "007",
-  severity: "error",
-  description: "Adding a foreign key without NOT VALID locks the table",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return (
+    statement.type === "alterTable" &&
+    statement.action === "addConstraint" &&
+    statement.constraintType === "foreignKey" &&
+    statement.notValid !== true
+  );
+}
 
-  detect: (stmt) =>
-    stmt.type === "alterTable" &&
-    stmt.action === "addConstraint" &&
-    stmt.constraintType === "foreignKey" &&
-    stmt.notValid !== true,
+function message(statement: ParsedStatement): string {
+  return `Adding foreign key "${statement.constraintName}" without NOT VALID locks the table`;
+}
 
-  message: (stmt) =>
-    `Adding foreign key "${stmt.constraintName}" without NOT VALID locks the table`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Adding a foreign key without NOT VALID validates all existing rows and locks the table
 
 ✅ Good: Follow these steps:
@@ -28,5 +27,14 @@ export const addForeignKeyRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_foreign_key
-`.trim(),
+`.trim();
+}
+
+export const addForeignKeyRule: Rule = {
+  name: "add_foreign_key",
+  severity: "error",
+  description: "Adding a foreign key without NOT VALID locks the table",
+  detect,
+  message,
+  suggestion,
 };

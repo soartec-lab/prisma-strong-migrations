@@ -1,20 +1,22 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addAutoIncrementRule: Rule = {
-  name: "add_auto_increment",
-  code: "014",
-  severity: "error",
-  description: "Adding a column with serial type locks the table",
+const SERIAL_TYPES = ["serial", "bigserial", "smallserial"];
 
-  detect: (stmt) =>
-    stmt.type === "alterTable" &&
-    stmt.action === "addColumn" &&
-    ["serial", "bigserial", "smallserial"].includes(stmt.dataType?.toLowerCase() ?? ""),
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return (
+    statement.type === "alterTable" &&
+    statement.action === "addColumn" &&
+    SERIAL_TYPES.includes(statement.dataType?.toLowerCase() ?? "")
+  );
+}
 
-  message: (stmt) => `Adding column "${stmt.column}" with serial type locks the table`,
+function message(statement: ParsedStatement): string {
+  return `Adding column "${statement.column}" with serial type locks the table`;
+}
 
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Adding a column with serial type creates a sequence and rewrites the table with default values
 
 ✅ Good: Use identity columns instead:
@@ -29,5 +31,14 @@ export const addAutoIncrementRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_auto_increment
-`.trim(),
+`.trim();
+}
+
+export const addAutoIncrementRule: Rule = {
+  name: "add_auto_increment",
+  severity: "error",
+  description: "Adding a column with serial type locks the table",
+  detect,
+  message,
+  suggestion,
 };

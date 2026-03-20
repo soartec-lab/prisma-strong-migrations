@@ -1,20 +1,20 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addUniqueConstraintRule: Rule = {
-  name: "add_unique_constraint",
-  code: "009",
-  severity: "error",
-  description: "Adding a unique constraint locks the table",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return (
+    statement.type === "alterTable" &&
+    statement.action === "addConstraint" &&
+    statement.constraintType === "unique"
+  );
+}
 
-  detect: (stmt) =>
-    stmt.type === "alterTable" &&
-    stmt.action === "addConstraint" &&
-    stmt.constraintType === "unique",
+function message(statement: ParsedStatement): string {
+  return `Adding unique constraint "${statement.constraintName}" locks the table`;
+}
 
-  message: (stmt) => `Adding unique constraint "${stmt.constraintName}" locks the table`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Adding a unique constraint directly acquires a lock that prevents reads and writes
 
 ✅ Good: Follow these steps:
@@ -26,5 +26,14 @@ export const addUniqueConstraintRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_unique_constraint
-`.trim(),
+`.trim();
+}
+
+export const addUniqueConstraintRule: Rule = {
+  name: "add_unique_constraint",
+  severity: "error",
+  description: "Adding a unique constraint locks the table",
+  detect,
+  message,
+  suggestion,
 };

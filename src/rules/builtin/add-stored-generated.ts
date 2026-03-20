@@ -1,21 +1,18 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addStoredGeneratedRule: Rule = {
-  name: "add_stored_generated",
-  code: "015",
-  severity: "error",
-  description: "Adding a stored generated column locks the table",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  if (statement.type !== "alterTable" || statement.action !== "addColumn") return false;
+  const upperRaw = statement.raw.toUpperCase();
+  return upperRaw.includes("GENERATED ALWAYS AS") && upperRaw.includes("STORED");
+}
 
-  detect: (stmt) => {
-    if (stmt.type !== "alterTable" || stmt.action !== "addColumn") return false;
-    const raw = stmt.raw.toUpperCase();
-    return raw.includes("GENERATED ALWAYS AS") && raw.includes("STORED");
-  },
+function message(statement: ParsedStatement): string {
+  return `Adding stored generated column "${statement.column}" locks the table`;
+}
 
-  message: (stmt) => `Adding stored generated column "${stmt.column}" locks the table`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Adding a stored generated column rewrites the entire table to compute the generated values
 
 ✅ Good: Follow these steps:
@@ -27,5 +24,14 @@ export const addStoredGeneratedRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_stored_generated
-`.trim(),
+`.trim();
+}
+
+export const addStoredGeneratedRule: Rule = {
+  name: "add_stored_generated",
+  severity: "error",
+  description: "Adding a stored generated column locks the table",
+  detect,
+  message,
+  suggestion,
 };

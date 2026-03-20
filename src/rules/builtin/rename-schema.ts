@@ -1,17 +1,16 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const renameSchemaRule: Rule = {
-  name: "rename_schema",
-  code: "016",
-  severity: "error",
-  description: "Renaming a schema may cause errors in running application",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return statement.type === "alterSchema";
+}
 
-  detect: (stmt) => stmt.type === "alterSchema",
+function message(_statement: ParsedStatement): string {
+  return `Renaming schema may cause errors in running application`;
+}
 
-  message: (_stmt) => `Renaming schema may cause errors in running application`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Renaming a schema may break application code that references the old schema name
 
 ✅ Good: Follow these steps:
@@ -23,5 +22,14 @@ export const renameSchemaRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line rename_schema
-`.trim(),
+`.trim();
+}
+
+export const renameSchemaRule: Rule = {
+  name: "rename_schema",
+  severity: "error",
+  description: "Renaming a schema may cause errors in running application",
+  detect,
+  message,
+  suggestion,
 };

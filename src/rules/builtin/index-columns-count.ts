@@ -1,19 +1,20 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const indexColumnsCountRule: Rule = {
-  name: "index_columns_count",
-  code: "101",
-  severity: "warning",
-  description: "Index with too many columns may impact write performance",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return (
+    statement.type === "createIndex" &&
+    statement.unique !== true &&
+    (statement.columns?.length ?? 0) >= 4
+  );
+}
 
-  detect: (stmt) =>
-    stmt.type === "createIndex" && stmt.unique !== true && (stmt.columns?.length ?? 0) >= 4,
+function message(statement: ParsedStatement): string {
+  return `Index "${statement.indexName}" has ${statement.columns?.length ?? 0} columns which may impact write performance`;
+}
 
-  message: (stmt) =>
-    `Index "${stmt.indexName}" has ${stmt.columns?.length ?? 0} columns which may impact write performance`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ⚠️  Warning: Indexes with many columns increase write overhead and storage usage
 
 ✅ Good: Consider these alternatives:
@@ -23,5 +24,14 @@ export const indexColumnsCountRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line index_columns_count
-`.trim(),
+`.trim();
+}
+
+export const indexColumnsCountRule: Rule = {
+  name: "index_columns_count",
+  severity: "warning",
+  description: "Index with too many columns may impact write performance",
+  detect,
+  message,
+  suggestion,
 };

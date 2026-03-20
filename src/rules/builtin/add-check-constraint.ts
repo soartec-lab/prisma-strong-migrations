@@ -1,22 +1,21 @@
-import type { Rule } from "../types";
+import type { ParsedStatement } from "../../parser/types";
+import type { CheckContext, Rule } from "../types";
 
-export const addCheckConstraintRule: Rule = {
-  name: "add_check_constraint",
-  code: "008",
-  severity: "error",
-  description: "Adding a check constraint without NOT VALID locks the table",
+function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+  return (
+    statement.type === "alterTable" &&
+    statement.action === "addConstraint" &&
+    statement.constraintType === "check" &&
+    statement.notValid !== true
+  );
+}
 
-  detect: (stmt) =>
-    stmt.type === "alterTable" &&
-    stmt.action === "addConstraint" &&
-    stmt.constraintType === "check" &&
-    stmt.notValid !== true,
+function message(statement: ParsedStatement): string {
+  return `Adding check constraint "${statement.constraintName}" without NOT VALID locks the table`;
+}
 
-  message: (stmt) =>
-    `Adding check constraint "${stmt.constraintName}" without NOT VALID locks the table`,
-
-  suggestion: (_stmt) =>
-    `
+function suggestion(_statement: ParsedStatement): string {
+  return `
 ❌ Bad: Adding a check constraint without NOT VALID validates all existing rows and locks the table
 
 ✅ Good: Follow these steps:
@@ -28,5 +27,14 @@ export const addCheckConstraintRule: Rule = {
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_check_constraint
-`.trim(),
+`.trim();
+}
+
+export const addCheckConstraintRule: Rule = {
+  name: "add_check_constraint",
+  severity: "error",
+  description: "Adding a check constraint without NOT VALID locks the table",
+  detect,
+  message,
+  suggestion,
 };
