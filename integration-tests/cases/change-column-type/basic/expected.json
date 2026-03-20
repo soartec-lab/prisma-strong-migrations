@@ -1,1 +1,1 @@
-{ "results": [{ "ruleCode": "004", "line": 1 }] }
+{ "results": [{ "ruleName": "change_column_type", "line": 1 }] }

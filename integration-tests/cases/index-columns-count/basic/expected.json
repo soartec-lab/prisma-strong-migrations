@@ -1,6 +1,6 @@
 {
   "results": [
-    { "ruleCode": "005", "line": 1 },
-    { "ruleCode": "101", "line": 1 }
+    { "ruleName": "add_index", "line": 1 },
+    { "ruleName": "index_columns_count", "line": 1 }
   ]
 }

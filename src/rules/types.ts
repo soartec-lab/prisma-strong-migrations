@@ -11,7 +11,6 @@ export interface CheckContext {
 
 export interface Rule {
   name: string;
-  code: string;
   severity: Severity;
   description: string;
   detect: (statement: ParsedStatement, context: CheckContext) => boolean;

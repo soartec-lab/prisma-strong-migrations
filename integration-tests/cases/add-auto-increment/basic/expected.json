@@ -1,1 +1,1 @@
-{ "results": [{ "ruleCode": "014", "line": 1 }] }
+{ "results": [{ "ruleName": "add_auto_increment", "line": 1 }] }

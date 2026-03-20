@@ -1,1 +1,1 @@
-{ "results": [{ "ruleCode": "007", "line": 1 }] }
+{ "results": [{ "ruleName": "add_foreign_key", "line": 1 }] }

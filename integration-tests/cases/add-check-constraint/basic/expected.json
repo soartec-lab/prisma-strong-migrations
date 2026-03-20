@@ -1,1 +1,1 @@
-{ "results": [{ "ruleCode": "008", "line": 1 }] }
+{ "results": [{ "ruleName": "add_check_constraint", "line": 1 }] }

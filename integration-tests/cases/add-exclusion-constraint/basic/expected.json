@@ -1,1 +1,1 @@
-{ "results": [{ "ruleCode": "010", "line": 1 }] }
+{ "results": [{ "ruleName": "add_exclusion_constraint", "line": 1 }] }

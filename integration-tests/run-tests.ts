@@ -55,7 +55,7 @@ if (cases.length === 0) {
           migrationPath: sqlPath,
         });
 
-        expect(results.map((r) => ({ ruleCode: r.rule.code, line: r.statement.line }))).toEqual(
+        expect(results.map((r) => ({ ruleName: r.rule.name, line: r.statement.line }))).toEqual(
           expected.results,
         );
       });
