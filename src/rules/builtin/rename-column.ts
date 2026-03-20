@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const renameColumnRule: Rule = {
   name: "rename_column",
-  code: "SM002",
+  code: "002",
   severity: "error",
   description: "Renaming a column may cause errors in running application",
 

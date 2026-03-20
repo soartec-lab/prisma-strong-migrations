@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const setNotNullRule: Rule = {
   name: "set_not_null",
-  code: "SM011",
+  code: "011",
   severity: "error",
   description: "Setting NOT NULL on a column locks the table",
 

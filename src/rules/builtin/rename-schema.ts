@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const renameSchemaRule: Rule = {
   name: "rename_schema",
-  code: "SM016",
+  code: "016",
   severity: "error",
   description: "Renaming a schema may cause errors in running application",
 

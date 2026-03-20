@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addJsonColumnRule: Rule = {
   name: "add_json_column",
-  code: "SM012",
+  code: "012",
   severity: "error",
   description: "Adding a json column is not recommended; use jsonb instead",
 

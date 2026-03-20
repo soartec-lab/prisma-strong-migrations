@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addAutoIncrementRule: Rule = {
   name: "add_auto_increment",
-  code: "SM014",
+  code: "014",
   severity: "error",
   description: "Adding a column with serial type locks the table",
 

@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addIndexRule: Rule = {
   name: "add_index",
-  code: "SM005",
+  code: "005",
   severity: "error",
   description: "Adding an index without CONCURRENTLY locks the table",
 

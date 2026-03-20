@@ -1,6 +1,6 @@
 {
   "results": [
-    { "ruleCode": "SM005", "line": 1 },
-    { "ruleCode": "SM101", "line": 1 }
+    { "ruleCode": "005", "line": 1 },
+    { "ruleCode": "101", "line": 1 }
   ]
 }

@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const indexColumnsCountRule: Rule = {
   name: "index_columns_count",
-  code: "SM101",
+  code: "101",
   severity: "warning",
   description: "Index with too many columns may impact write performance",
 

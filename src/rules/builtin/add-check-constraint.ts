@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addCheckConstraintRule: Rule = {
   name: "add_check_constraint",
-  code: "SM008",
+  code: "008",
   severity: "error",
   description: "Adding a check constraint without NOT VALID locks the table",
 

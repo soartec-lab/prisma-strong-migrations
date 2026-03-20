@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const renameTableRule: Rule = {
   name: "rename_table",
-  code: "SM003",
+  code: "003",
   severity: "error",
   description: "Renaming a table may cause errors in running application",
 

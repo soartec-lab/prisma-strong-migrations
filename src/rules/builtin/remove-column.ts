@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const removeColumnRule: Rule = {
   name: "remove_column",
-  code: "SM001",
+  code: "001",
   severity: "error",
   description: "Removing a column may cause application errors",
 

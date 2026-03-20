@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const changeColumnTypeRule: Rule = {
   name: "change_column_type",
-  code: "SM004",
+  code: "004",
   severity: "error",
   description: "Changing a column type may cause application errors",
 

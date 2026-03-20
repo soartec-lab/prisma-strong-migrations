@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addVolatileDefaultRule: Rule = {
   name: "add_volatile_default",
-  code: "SM013",
+  code: "013",
   severity: "error",
   description: "Adding a column with a volatile default value may cause issues",
 

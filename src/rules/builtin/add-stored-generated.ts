@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addStoredGeneratedRule: Rule = {
   name: "add_stored_generated",
-  code: "SM015",
+  code: "015",
   severity: "error",
   description: "Adding a stored generated column locks the table",
 

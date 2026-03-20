@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addExclusionConstraintRule: Rule = {
   name: "add_exclusion_constraint",
-  code: "SM010",
+  code: "010",
   severity: "error",
   description: "Adding an exclusion constraint locks the table",
 

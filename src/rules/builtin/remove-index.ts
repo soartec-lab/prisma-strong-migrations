@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const removeIndexRule: Rule = {
   name: "remove_index",
-  code: "SM006",
+  code: "006",
   severity: "error",
   description: "Dropping an index without CONCURRENTLY locks the table",
 

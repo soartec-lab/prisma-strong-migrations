@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addUniqueConstraintRule: Rule = {
   name: "add_unique_constraint",
-  code: "SM009",
+  code: "009",
   severity: "error",
   description: "Adding a unique constraint locks the table",
 

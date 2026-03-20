@@ -2,7 +2,7 @@ import type { Rule } from "../types";
 
 export const addForeignKeyRule: Rule = {
   name: "add_foreign_key",
-  code: "SM007",
+  code: "007",
   severity: "error",
   description: "Adding a foreign key without NOT VALID locks the table",
 
