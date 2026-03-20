@@ -1,24 +1,24 @@
 export type StatementType =
-  | 'alter_table'
-  | 'create_index'
-  | 'drop_index'
-  | 'create_table'
-  | 'drop_table'
-  | 'alter_schema'
+  | 'alterTable'
+  | 'createIndex'
+  | 'dropIndex'
+  | 'createTable'
+  | 'dropTable'
+  | 'alterSchema'
   | 'unknown';
 
 export type AlterAction =
-  | 'add_column'
-  | 'drop_column'
-  | 'rename_column'
-  | 'alter_column_type'
-  | 'alter_column_set_not_null'
-  | 'alter_column_set_default'
-  | 'add_constraint'
-  | 'rename_table';
+  | 'addColumn'
+  | 'dropColumn'
+  | 'renameColumn'
+  | 'alterColumnType'
+  | 'alterColumnSetNotNull'
+  | 'alterColumnSetDefault'
+  | 'addConstraint'
+  | 'renameTable';
 
 export type ConstraintType =
-  | 'foreign_key'
+  | 'foreignKey'
   | 'check'
   | 'unique'
   | 'exclusion';
@@ -38,5 +38,5 @@ export interface ParsedStatement {
   constraintName?: string;
   constraintType?: ConstraintType;
   notValid?: boolean;
-  _disabled?: string[];
+  disabled?: string[];
 }
