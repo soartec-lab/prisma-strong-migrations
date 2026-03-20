@@ -1,17 +1,17 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   if (statement.type !== "alterTable" || statement.action !== "addColumn") return false;
   const upperRaw = statement.raw.toUpperCase();
   return upperRaw.includes("GENERATED ALWAYS AS") && upperRaw.includes("STORED");
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Adding stored generated column "${statement.column}" locks the table`;
-}
+};
 
-function suggestion(_statement: ParsedStatement): string {
+const suggestion = (_statement: ParsedStatement): string => {
   return `
 ❌ Bad: Adding a stored generated column rewrites the entire table to compute the generated values
 
@@ -25,7 +25,7 @@ function suggestion(_statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_stored_generated
 `.trim();
-}
+};
 
 export const addStoredGeneratedRule: Rule = {
   name: "add_stored_generated",

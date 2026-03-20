@@ -3,19 +3,19 @@ import type { CheckContext, Rule } from "../types";
 
 const SERIAL_TYPES = ["serial", "bigserial", "smallserial"];
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
     statement.type === "alterTable" &&
     statement.action === "addColumn" &&
     SERIAL_TYPES.includes(statement.dataType?.toLowerCase() ?? "")
   );
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Adding column "${statement.column}" with serial type locks the table`;
-}
+};
 
-function suggestion(_statement: ParsedStatement): string {
+const suggestion = (_statement: ParsedStatement): string => {
   return `
 ❌ Bad: Adding a column with serial type creates a sequence and rewrites the table with default values
 
@@ -32,7 +32,7 @@ function suggestion(_statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_auto_increment
 `.trim();
-}
+};
 
 export const addAutoIncrementRule: Rule = {
   name: "add_auto_increment",

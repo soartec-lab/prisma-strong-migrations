@@ -1,15 +1,15 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "alterTable" && statement.action === "renameColumn";
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Renaming column "${statement.column}" on table "${statement.table}" may cause errors in running application`;
-}
+};
 
-function suggestion(statement: ParsedStatement): string {
+const suggestion = (statement: ParsedStatement): string => {
   return `
 ❌ Bad: Renaming a column may break application code that references the old column name
 
@@ -24,7 +24,7 @@ function suggestion(statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line rename_column
 `.trim();
-}
+};
 
 export const renameColumnRule: Rule = {
   name: "rename_column",

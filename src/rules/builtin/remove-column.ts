@@ -1,15 +1,15 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "alterTable" && statement.action === "dropColumn";
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Removing column "${statement.column}" from table "${statement.table}" may cause errors in running application`;
-}
+};
 
-function suggestion(statement: ParsedStatement): string {
+const suggestion = (statement: ParsedStatement): string => {
   return `
 ❌ Bad: Removing a column immediately can cause errors if the application still references it
 
@@ -24,7 +24,7 @@ function suggestion(statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line remove_column
 `.trim();
-}
+};
 
 export const removeColumnRule: Rule = {
   name: "remove_column",

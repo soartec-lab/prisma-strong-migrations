@@ -1,19 +1,19 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
     statement.type === "createIndex" &&
     statement.unique !== true &&
     (statement.columns?.length ?? 0) >= 4
   );
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Index "${statement.indexName}" has ${statement.columns?.length ?? 0} columns which may impact write performance`;
-}
+};
 
-function suggestion(_statement: ParsedStatement): string {
+const suggestion = (_statement: ParsedStatement): string => {
   return `
 ⚠️  Warning: Indexes with many columns increase write overhead and storage usage
 
@@ -25,7 +25,7 @@ function suggestion(_statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line index_columns_count
 `.trim();
-}
+};
 
 export const indexColumnsCountRule: Rule = {
   name: "index_columns_count",

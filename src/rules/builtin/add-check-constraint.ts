@@ -1,20 +1,20 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
     statement.type === "alterTable" &&
     statement.action === "addConstraint" &&
     statement.constraintType === "check" &&
     statement.notValid !== true
   );
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Adding check constraint "${statement.constraintName}" without NOT VALID locks the table`;
-}
+};
 
-function suggestion(_statement: ParsedStatement): string {
+const suggestion = (_statement: ParsedStatement): string => {
   return `
 ❌ Bad: Adding a check constraint without NOT VALID validates all existing rows and locks the table
 
@@ -28,7 +28,7 @@ function suggestion(_statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_check_constraint
 `.trim();
-}
+};
 
 export const addCheckConstraintRule: Rule = {
   name: "add_check_constraint",

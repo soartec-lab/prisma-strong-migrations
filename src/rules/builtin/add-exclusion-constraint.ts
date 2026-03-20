@@ -1,19 +1,19 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
     statement.type === "alterTable" &&
     statement.action === "addConstraint" &&
     statement.constraintType === "exclusion"
   );
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Adding exclusion constraint "${statement.constraintName}" locks the table`;
-}
+};
 
-function suggestion(_statement: ParsedStatement): string {
+const suggestion = (_statement: ParsedStatement): string => {
   return `
 ❌ Bad: Adding an exclusion constraint always requires a full table scan and locks the table
 
@@ -25,7 +25,7 @@ function suggestion(_statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_exclusion_constraint
 `.trim();
-}
+};
 
 export const addExclusionConstraintRule: Rule = {
   name: "add_exclusion_constraint",

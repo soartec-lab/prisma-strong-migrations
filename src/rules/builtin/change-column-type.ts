@@ -1,15 +1,15 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "alterTable" && statement.action === "alterColumnType";
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Changing type of column "${statement.column}" on table "${statement.table}" may cause application errors`;
-}
+};
 
-function suggestion(statement: ParsedStatement): string {
+const suggestion = (statement: ParsedStatement): string => {
   return `
 ❌ Bad: Changing a column type may cause errors if the application reads the column with the old type
 
@@ -24,7 +24,7 @@ function suggestion(statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line change_column_type
 `.trim();
-}
+};
 
 export const changeColumnTypeRule: Rule = {
   name: "change_column_type",

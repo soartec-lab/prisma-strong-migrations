@@ -1,19 +1,19 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
     statement.type === "alterTable" &&
     statement.action === "addColumn" &&
     statement.dataType?.toLowerCase() === "json"
   );
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Adding column "${statement.column}" with type json is not recommended. Use jsonb instead`;
-}
+};
 
-function suggestion(_statement: ParsedStatement): string {
+const suggestion = (_statement: ParsedStatement): string => {
   return `
 ❌ Bad: The json type stores an exact copy of the input text which must be reparsed on every query
 
@@ -27,7 +27,7 @@ Replace json with jsonb in your migration.
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_json_column
 `.trim();
-}
+};
 
 export const addJsonColumnRule: Rule = {
   name: "add_json_column",

@@ -1,15 +1,15 @@
 import type { ParsedStatement } from "../../parser/types";
 import type { CheckContext, Rule } from "../types";
 
-function detect(statement: ParsedStatement, _context: CheckContext): boolean {
+const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "alterTable" && statement.action === "alterColumnSetNotNull";
-}
+};
 
-function message(statement: ParsedStatement): string {
+const message = (statement: ParsedStatement): string => {
   return `Setting NOT NULL on column "${statement.column}" in table "${statement.table}" locks the table`;
-}
+};
 
-function suggestion(statement: ParsedStatement): string {
+const suggestion = (statement: ParsedStatement): string => {
   return `
 ❌ Bad: Setting NOT NULL directly validates all existing rows and locks the table
 
@@ -27,7 +27,7 @@ function suggestion(statement: ParsedStatement): string {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line set_not_null
 `.trim();
-}
+};
 
 export const setNotNullRule: Rule = {
   name: "set_not_null",
