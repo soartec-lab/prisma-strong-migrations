@@ -5,7 +5,8 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "declaration": true,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "types": ["node"]
   },
   "include": ["src", "integration-tests"]
 }
