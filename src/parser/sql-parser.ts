@@ -10,7 +10,8 @@ import type { ParsedStatement, ConstraintType } from "./types";
 
 // ---- Constants ----
 
-const DISABLE_COMMENT_PATTERN = /--\s*prisma-strong-migrations-disable-next-line\s*([\w\s,]*)/;
+const DISABLE_COMMENT_PATTERN =
+  /--\s*prisma-strong-migrations-disable-next-line\s*([\w,\s]*)(?:--\s*(.+))?/;
 
 const NOT_VALID_PATTERN = /\bNOT\s+VALID\b/i;
 
@@ -28,22 +29,42 @@ function lineNumberAt(offset: number, sql: string): number {
 
 // ---- Disable-comment map ----
 
+type DisableEntry = { rules: string[]; reason?: string };
+
 /**
  * Scan SQL for disable-next-line comments.
- * Returns a map of { line number of the NEXT line → rule names to disable }.
- * An empty array means "disable all rules".
+ * Returns a map of { line number of the NEXT line → DisableEntry }.
+ * An empty rules array means "disable all rules".
+ * Multiple disable comments targeting the same statement are merged.
  */
-function buildDisableMap(sql: string): Map<number, string[]> {
-  const map = new Map<number, string[]>();
+function buildDisableMap(sql: string): Map<number, DisableEntry> {
+  const map = new Map<number, DisableEntry>();
+  const lines = sql.split("\n");
 
-  sql.split("\n").forEach((lineText, lineIndex) => {
+  lines.forEach((lineText, lineIndex) => {
     const match = lineText.match(DISABLE_COMMENT_PATTERN);
     if (!match) return;
 
     const rulesText = match[1].trim();
-    const ruleNames = rulesText ? rulesText.split(/[\s,]+/).filter(Boolean) : [];
-    const nextLineNumber = lineIndex + 2; // lineIndex is 0-based; next line is (lineIndex+1)+1
-    map.set(nextLineNumber, ruleNames);
+    const rules = rulesText ? rulesText.split(/[\s,]+/).filter(Boolean) : [];
+    const reason = match[2]?.trim() || undefined;
+
+    // Skip over any consecutive disable-next-line comments to find the target SQL line
+    let targetIndex = lineIndex + 1;
+    while (targetIndex < lines.length && DISABLE_COMMENT_PATTERN.test(lines[targetIndex])) {
+      targetIndex++;
+    }
+    const targetLineNumber = targetIndex + 1; // convert to 1-based
+
+    const existing = map.get(targetLineNumber);
+    if (existing) {
+      existing.rules.push(...rules);
+      if (reason) {
+        existing.reason = existing.reason ? `${existing.reason}, ${reason}` : reason;
+      }
+    } else {
+      map.set(targetLineNumber, { rules, reason });
+    }
   });
 
   return map;
@@ -360,8 +381,11 @@ export function parseSql(sql: string): ParsedStatement[] {
   const disableMap = buildDisableMap(sql);
 
   function applyDisableComment(parsedStatement: ParsedStatement): ParsedStatement {
-    const disabledRules = disableMap.get(parsedStatement.line);
-    if (disabledRules !== undefined) parsedStatement.disabled = disabledRules;
+    const entry = disableMap.get(parsedStatement.line);
+    if (entry !== undefined) {
+      parsedStatement.disabled = entry.rules;
+      if (entry.reason) parsedStatement.disableReason = entry.reason;
+    }
     return parsedStatement;
   }
 
