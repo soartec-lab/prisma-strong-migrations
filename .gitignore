@@ -1,2 +1,13 @@
+# ローカル開発ドキュメント（個人用）
 .local-dev-docs/
 .claude/skills/
+
+# 依存パッケージ
+node_modules/
+.pnpm-store/
+
+# ビルド成果物
+dist/
+
+# テストカバレッジ
+coverage/
