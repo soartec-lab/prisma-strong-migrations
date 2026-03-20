@@ -216,6 +216,48 @@ ALTER TABLE "users" ADD COLUMN "email" text;`;
       expect(results[0].disabled).toBeUndefined();
       expect(results[1].disabled).toEqual(["remove_column"]);
     });
+
+    it("reason after -- is captured in disableReason", () => {
+      const sql = `-- prisma-strong-migrations-disable-next-line remove_column -- コード削除済み
+ALTER TABLE "users" DROP COLUMN "name";`;
+      const results = parseSql(sql);
+      expect(results[0].disabled).toEqual(["remove_column"]);
+      expect(results[0].disableReason).toBe("コード削除済み");
+    });
+
+    it("no reason → disableReason is undefined", () => {
+      const sql = `-- prisma-strong-migrations-disable-next-line remove_column
+ALTER TABLE "users" DROP COLUMN "name";`;
+      const results = parseSql(sql);
+      expect(results[0].disabled).toEqual(["remove_column"]);
+      expect(results[0].disableReason).toBeUndefined();
+    });
+
+    it("reason with multiple rules on one line", () => {
+      const sql = `-- prisma-strong-migrations-disable-next-line remove_column, rename_column -- デプロイ完了後に適用
+ALTER TABLE "users" DROP COLUMN "name";`;
+      const results = parseSql(sql);
+      expect(results[0].disabled).toEqual(["remove_column", "rename_column"]);
+      expect(results[0].disableReason).toBe("デプロイ完了後に適用");
+    });
+
+    it("multiple disable comment lines merged for same statement", () => {
+      const sql = `-- prisma-strong-migrations-disable-next-line remove_column -- コード削除済み
+-- prisma-strong-migrations-disable-next-line rename_column -- 後方互換性のため
+ALTER TABLE "users" DROP COLUMN "name";`;
+      const results = parseSql(sql);
+      expect(results[0].disabled).toEqual(["remove_column", "rename_column"]);
+      expect(results[0].disableReason).toBe("コード削除済み, 後方互換性のため");
+    });
+
+    it("multiple disable comment lines without reason merged correctly", () => {
+      const sql = `-- prisma-strong-migrations-disable-next-line remove_column
+-- prisma-strong-migrations-disable-next-line rename_column
+ALTER TABLE "users" DROP COLUMN "name";`;
+      const results = parseSql(sql);
+      expect(results[0].disabled).toEqual(["remove_column", "rename_column"]);
+      expect(results[0].disableReason).toBeUndefined();
+    });
   });
 
   describe("line numbers", () => {
