@@ -42,12 +42,6 @@
     ]
   },
   "context": {
-    "include": [
-      "AGENTS.md",
-      "README.md",
-      "docs/**/*.md",
-      "src/**/*.ts",
-      "integration-tests/**/*"
-    ]
+    "include": ["AGENTS.md", "README.md", "docs/**/*.md", "src/**/*.ts", "integration-tests/**/*"]
   }
 }

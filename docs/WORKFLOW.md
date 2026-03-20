@@ -56,6 +56,7 @@ Follow the warning instructions to perform the migration safely.
 #### Example: Column Removal
 
 **Warning:**
+
 ```
 === ❌ Dangerous operation detected [SM001] ===
 
@@ -236,24 +237,24 @@ name: Migration Check
 on:
   pull_request:
     paths:
-      - 'prisma/schema.prisma'
-      - 'prisma/migrations/**'
+      - "prisma/schema.prisma"
+      - "prisma/migrations/**"
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
-          node-version: '22'
+          node-version: "22"
           cache: true
-          
+
       - name: Install dependencies
         run: vp install
-        
+
       - name: Check migrations
         run: npx prisma-strong-migrations check
 ```
@@ -263,33 +264,33 @@ jobs:
 When check fails, you can also add a comment to the PR:
 
 ```yaml
-      - name: Check migrations
-        id: check
-        run: |
-          npx prisma-strong-migrations check --format json > report.json
-          echo "result=$(cat report.json)" >> $GITHUB_OUTPUT
-        continue-on-error: true
-        
-      - name: Comment on PR
-        if: steps.check.outcome == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const report = JSON.parse('${{ steps.check.outputs.result }}');
-            const body = `## ⚠️ Migration Safety Check Failed
-            
-            ${report.errors.map(e => `- **${e.code}**: ${e.message}`).join('\n')}
-            
-            Please review the warnings and either:
-            1. Follow the recommended safe approach
-            2. Add a disable comment with a reason
-            `;
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+- name: Check migrations
+  id: check
+  run: |
+    npx prisma-strong-migrations check --format json > report.json
+    echo "result=$(cat report.json)" >> $GITHUB_OUTPUT
+  continue-on-error: true
+
+- name: Comment on PR
+  if: steps.check.outcome == 'failure'
+  uses: actions/github-script@v7
+  with:
+    script: |
+      const report = JSON.parse('${{ steps.check.outputs.result }}');
+      const body = `## ⚠️ Migration Safety Check Failed
+
+      ${report.errors.map(e => `- **${e.code}**: ${e.message}`).join('\n')}
+
+      Please review the warnings and either:
+      1. Follow the recommended safe approach
+      2. Add a disable comment with a reason
+      `;
+      github.rest.issues.createComment({
+        issue_number: context.issue.number,
+        owner: context.repo.owner,
+        repo: context.repo.repo,
+        body: body
+      });
 ```
 
 ## Best Practices
@@ -331,7 +332,7 @@ Commit `prisma-strong-migrations.config.js` to the repository so the entire team
 // prisma-strong-migrations.config.js
 module.exports = {
   // Project-specific settings
-  customRulesDir: './prisma-strong-migrations-rules',
+  customRulesDir: "./prisma-strong-migrations-rules",
 };
 ```
 

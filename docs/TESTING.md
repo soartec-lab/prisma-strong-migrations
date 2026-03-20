@@ -7,6 +7,7 @@ This document explains the testing strategy for prisma-strong-migrations.
 This project uses [Vite+](https://github.com/voidzero-dev/vite-plus).
 
 Vite+ is a development toolchain that integrates the following tools:
+
 - **Vite** - Development server
 - **Vitest** - Test runner
 - **Oxlint** - Linter
@@ -64,54 +65,54 @@ src/
 
 ```typescript
 // src/rules/builtin/remove-column.test.ts
-import { describe, it, expect } from 'vitest';
-import { removeColumnRule } from './remove-column';
-import { ParsedStatement } from '../types';
+import { describe, it, expect } from "vitest";
+import { removeColumnRule } from "./remove-column";
+import { ParsedStatement } from "../types";
 
-describe('removeColumnRule', () => {
-  describe('detect', () => {
-    it('should detect DROP COLUMN statement', () => {
+describe("removeColumnRule", () => {
+  describe("detect", () => {
+    it("should detect DROP COLUMN statement", () => {
       const stmt: ParsedStatement = {
-        type: 'alter_table',
-        action: 'drop_column',
-        table: 'users',
-        column: 'name',
+        type: "alter_table",
+        action: "drop_column",
+        table: "users",
+        column: "name",
         raw: 'ALTER TABLE "users" DROP COLUMN "name"',
         line: 1,
       };
-      
+
       expect(removeColumnRule.detect(stmt, {} as any)).toBe(true);
     });
-    
-    it('should not detect ADD COLUMN statement', () => {
+
+    it("should not detect ADD COLUMN statement", () => {
       const stmt: ParsedStatement = {
-        type: 'alter_table',
-        action: 'add_column',
-        table: 'users',
-        column: 'email',
+        type: "alter_table",
+        action: "add_column",
+        table: "users",
+        column: "email",
         raw: 'ALTER TABLE "users" ADD COLUMN "email" text',
         line: 1,
       };
-      
+
       expect(removeColumnRule.detect(stmt, {} as any)).toBe(false);
     });
   });
-  
-  describe('message', () => {
-    it('should include table and column names', () => {
+
+  describe("message", () => {
+    it("should include table and column names", () => {
       const stmt: ParsedStatement = {
-        type: 'alter_table',
-        action: 'drop_column',
-        table: 'users',
-        column: 'name',
+        type: "alter_table",
+        action: "drop_column",
+        table: "users",
+        column: "name",
         raw: 'ALTER TABLE "users" DROP COLUMN "name"',
         line: 1,
       };
-      
+
       const message = removeColumnRule.message(stmt);
-      
-      expect(message).toContain('users');
-      expect(message).toContain('name');
+
+      expect(message).toContain("users");
+      expect(message).toContain("name");
     });
   });
 });
@@ -191,13 +192,16 @@ Description of this test case.
 # remove-column
 
 ## Overview
+
 Tests detection of column removal.
 
 ## Expected Behavior
+
 - `remove_column` rule (SM001) should be detected
 - Should be reported as an error
 
 ## Related Rules
+
 - SM001: remove_column
 ```
 
@@ -213,11 +217,13 @@ cases/remove-column/
 ```
 
 **migration.sql:**
+
 ```sql
 ALTER TABLE "users" DROP COLUMN "name";
 ```
 
 **expected.json:**
+
 ```json
 {
   "errors": [
@@ -241,12 +247,14 @@ cases/remove-column-with-disable/
 ```
 
 **migration.sql:**
+
 ```sql
 -- prisma-strong-migrations-disable-next-line remove_column
 ALTER TABLE "users" DROP COLUMN "name";
 ```
 
 **expected.json:**
+
 ```json
 {
   "errors": [],
@@ -264,11 +272,13 @@ cases/add-index-concurrent/
 ```
 
 **migration.sql:**
+
 ```sql
 CREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");
 ```
 
 **expected.json:**
+
 ```json
 {
   "errors": [],
@@ -286,6 +296,7 @@ cases/complex-migration/
 ```
 
 **migration.sql:**
+
 ```sql
 -- Add new column (safe)
 ALTER TABLE "users" ADD COLUMN "email" text;
@@ -299,6 +310,7 @@ ALTER TABLE "users" DROP COLUMN "old_email";
 ```
 
 **expected.json:**
+
 ```json
 {
   "errors": [
@@ -316,9 +328,9 @@ ALTER TABLE "users" DROP COLUMN "old_email";
 
 ```typescript
 // integration-tests/run-tests.ts
-import * as fs from 'fs';
-import * as path from 'path';
-import { check } from '../src/checker';
+import * as fs from "fs";
+import * as path from "path";
+import { check } from "../src/checker";
 
 interface ExpectedResult {
   errors: Array<{
@@ -336,44 +348,42 @@ interface ExpectedResult {
 }
 
 async function runTests() {
-  const casesDir = path.join(__dirname, 'cases');
+  const casesDir = path.join(__dirname, "cases");
   const cases = fs.readdirSync(casesDir);
-  
+
   let passed = 0;
   let failed = 0;
-  
+
   for (const caseName of cases) {
     const caseDir = path.join(casesDir, caseName);
-    
+
     if (!fs.statSync(caseDir).isDirectory()) continue;
-    
-    const migrationPath = path.join(caseDir, 'migration.sql');
-    const expectedPath = path.join(caseDir, 'expected.json');
-    
+
+    const migrationPath = path.join(caseDir, "migration.sql");
+    const expectedPath = path.join(caseDir, "expected.json");
+
     if (!fs.existsSync(migrationPath) || !fs.existsSync(expectedPath)) {
       console.warn(`⚠️  Skipping ${caseName}: missing files`);
       continue;
     }
-    
-    const sql = fs.readFileSync(migrationPath, 'utf-8');
-    const expected: ExpectedResult = JSON.parse(
-      fs.readFileSync(expectedPath, 'utf-8')
-    );
-    
+
+    const sql = fs.readFileSync(migrationPath, "utf-8");
+    const expected: ExpectedResult = JSON.parse(fs.readFileSync(expectedPath, "utf-8"));
+
     try {
       const result = await check(sql, { migrationPath });
-      
+
       // Compare results
       const errorsMatch = compareResults(result.errors, expected.errors);
       const warningsMatch = compareResults(result.warnings, expected.warnings);
-      
+
       if (errorsMatch && warningsMatch) {
         console.log(`✅ ${caseName}`);
         passed++;
       } else {
         console.log(`❌ ${caseName}`);
-        console.log('   Expected:', JSON.stringify(expected, null, 2));
-        console.log('   Actual:', JSON.stringify(result, null, 2));
+        console.log("   Expected:", JSON.stringify(expected, null, 2));
+        console.log("   Actual:", JSON.stringify(result, null, 2));
         failed++;
       }
     } catch (error) {
@@ -381,23 +391,24 @@ async function runTests() {
       failed++;
     }
   }
-  
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed > 0 ? 1 : 0);
 }
 
 function compareResults(actual: any[], expected: any[]): boolean {
   if (actual.length !== expected.length) return false;
-  
+
   for (const exp of expected) {
-    const found = actual.some(act => 
-      act.rule === exp.rule &&
-      act.code === exp.code &&
-      (exp.line === undefined || act.line === exp.line)
+    const found = actual.some(
+      (act) =>
+        act.rule === exp.rule &&
+        act.code === exp.code &&
+        (exp.line === undefined || act.line === exp.line),
     );
     if (!found) return false;
   }
-  
+
   return true;
 }
 
@@ -428,17 +439,17 @@ vp test --coverage
 ### Test Configuration in vite.config.ts
 
 ```typescript
-import { defineConfig } from 'vite-plus';
+import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   test: {
     include: [
-      'src/**/*.test.ts',           // Unit tests
-      'integration-tests/**/*.ts',   // Integration tests
+      "src/**/*.test.ts", // Unit tests
+      "integration-tests/**/*.ts", // Integration tests
     ],
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
+      provider: "v8",
+      reporter: ["text", "html"],
     },
   },
 });
@@ -479,19 +490,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@v1
         with:
-          node-version: '22'
+          node-version: "22"
           cache: true
-          
+
       - name: Install dependencies
         run: vp install
-        
+
       - name: Run checks (lint, format, type-check)
         run: vp check
-        
+
       - name: Run tests
         run: vp test
 ```
@@ -501,11 +512,11 @@ jobs:
 ### Coverage Goals
 
 | Component | Target Coverage |
-|-----------|-----------------|
-| Parser | 90%+ |
-| Rules | 95%+ |
-| Checker | 85%+ |
-| CLI | 70%+ |
+| --------- | --------------- |
+| Parser    | 90%+            |
+| Rules     | 95%+            |
+| Checker   | 85%+            |
+| CLI       | 70%+            |
 
 ### Viewing Coverage Report
 

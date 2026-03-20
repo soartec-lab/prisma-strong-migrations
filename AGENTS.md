@@ -19,6 +19,7 @@ This project uses Docker + devcontainer for development.
 ```
 
 The devcontainer includes:
+
 - Node.js v25
 - Vite+ (vp command)
 - Git
@@ -34,13 +35,13 @@ The devcontainer includes:
 
 ### Key Documentation
 
-| Document | Content |
-|----------|---------|
-| [README.md](./README.md) | Project overview, Bad/Good examples for all rules |
-| [docs/DESIGN.md](./docs/DESIGN.md) | Architecture, directory structure, component details |
-| [docs/RULES.md](./docs/RULES.md) | Technical details of rules |
-| [docs/TESTING.md](./docs/TESTING.md) | Testing strategy |
-| [docs/WORKFLOW.md](./docs/WORKFLOW.md) | Development workflow |
+| Document                               | Content                                              |
+| -------------------------------------- | ---------------------------------------------------- |
+| [README.md](./README.md)               | Project overview, Bad/Good examples for all rules    |
+| [docs/DESIGN.md](./docs/DESIGN.md)     | Architecture, directory structure, component details |
+| [docs/RULES.md](./docs/RULES.md)       | Technical details of rules                           |
+| [docs/TESTING.md](./docs/TESTING.md)   | Testing strategy                                     |
+| [docs/WORKFLOW.md](./docs/WORKFLOW.md) | Development workflow                                 |
 
 ## Development Rules
 
@@ -157,6 +158,7 @@ Follow this order for implementation:
 ```
 
 **Commit example:**
+
 ```
 feat: initialize project with vite-plus
 ```
@@ -170,6 +172,7 @@ feat: initialize project with vite-plus
 ```
 
 **Commit examples:**
+
 ```
 feat(types): add ParsedStatement type
 feat(types): add Rule and CheckContext types
@@ -184,6 +187,7 @@ feat(types): add Config type
 ```
 
 **Commit examples:**
+
 ```
 feat(parser): add SQL parser base implementation
 test(parser): add SQL parser tests for ALTER TABLE
@@ -202,6 +206,7 @@ Implement each rule individually:
 ```
 
 **Commit examples:**
+
 ```
 feat(rules): add remove_column rule (SM001)
 test(rules): add remove_column unit tests
@@ -238,16 +243,16 @@ test(integration): add remove_column test case
 
 ```typescript
 // src/rules/builtin/remove-column.test.ts
-import { describe, it, expect } from 'vitest';
-import { removeColumnRule } from './remove-column';
+import { describe, it, expect } from "vitest";
+import { removeColumnRule } from "./remove-column";
 
-describe('removeColumnRule', () => {
-  describe('detect', () => {
-    it('should detect DROP COLUMN statement', () => {
+describe("removeColumnRule", () => {
+  describe("detect", () => {
+    it("should detect DROP COLUMN statement", () => {
       // ...
     });
-    
-    it('should not detect ADD COLUMN statement', () => {
+
+    it("should not detect ADD COLUMN statement", () => {
       // ...
     });
   });
@@ -270,23 +275,22 @@ integration-tests/cases/remove-column/
 
 ```typescript
 // src/rules/builtin/remove-column.ts
-import { Rule, ParsedStatement } from '../types';
+import { Rule, ParsedStatement } from "../types";
 
 export const removeColumnRule: Rule = {
-  name: 'remove_column',
-  code: 'SM001',
-  severity: 'error',
-  description: 'Removing a column may cause application errors',
-  
+  name: "remove_column",
+  code: "SM001",
+  severity: "error",
+  description: "Removing a column may cause application errors",
+
   detect: (stmt: ParsedStatement): boolean => {
-    return stmt.type === 'alter_table' && 
-           stmt.action === 'drop_column';
+    return stmt.type === "alter_table" && stmt.action === "drop_column";
   },
-  
+
   message: (stmt: ParsedStatement): string => {
     return `Removing column "${stmt.column}" from table "${stmt.table}" may cause errors`;
   },
-  
+
   suggestion: (stmt: ParsedStatement): string => {
     return `
 ❌ Bad: Removing a column may cause application errors
@@ -302,7 +306,7 @@ export const removeColumnRule: Rule = {
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line remove_column
     `.trim();
-  }
+  },
 };
 ```
 
@@ -320,13 +324,13 @@ Parser detection:
 ```typescript
 const DISABLE_PATTERN = /--\s*prisma-strong-migrations-disable-next-line\s*([\w\s,]*)/;
 
-function parseDisableComment(line: string): string[] | 'all' {
+function parseDisableComment(line: string): string[] | "all" {
   const match = line.match(DISABLE_PATTERN);
   if (!match) return [];
-  
+
   const rules = match[1].trim();
-  if (!rules) return 'all';
-  
+  if (!rules) return "all";
+
   return rules.split(/[\s,]+/).filter(Boolean);
 }
 ```
@@ -336,16 +340,19 @@ function parseDisableComment(line: string): string[] | 'all' {
 ```typescript
 // Custom error classes
 export class ParseError extends Error {
-  constructor(message: string, public line: number) {
+  constructor(
+    message: string,
+    public line: number,
+  ) {
     super(message);
-    this.name = 'ParseError';
+    this.name = "ParseError";
   }
 }
 
 export class ConfigError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'ConfigError';
+    this.name = "ConfigError";
   }
 }
 ```
@@ -384,25 +391,25 @@ Checklist for implementing each feature:
 
 Rules to implement:
 
-| Code | Name | Priority |
-|------|------|----------|
-| SM001 | remove_column | High |
-| SM002 | rename_column | High |
-| SM003 | rename_table | High |
-| SM004 | change_column_type | High |
-| SM005 | add_index | High |
-| SM006 | remove_index | Medium |
-| SM007 | add_foreign_key | High |
-| SM008 | add_check_constraint | Medium |
-| SM009 | add_unique_constraint | Medium |
-| SM010 | add_exclusion_constraint | Low |
-| SM011 | set_not_null | High |
-| SM012 | add_json_column | Medium |
-| SM013 | add_volatile_default | Medium |
-| SM014 | add_auto_increment | Low |
-| SM015 | add_stored_generated | Low |
-| SM016 | rename_schema | Low |
-| SM101 | index_columns_count | Low |
+| Code  | Name                     | Priority |
+| ----- | ------------------------ | -------- |
+| SM001 | remove_column            | High     |
+| SM002 | rename_column            | High     |
+| SM003 | rename_table             | High     |
+| SM004 | change_column_type       | High     |
+| SM005 | add_index                | High     |
+| SM006 | remove_index             | Medium   |
+| SM007 | add_foreign_key          | High     |
+| SM008 | add_check_constraint     | Medium   |
+| SM009 | add_unique_constraint    | Medium   |
+| SM010 | add_exclusion_constraint | Low      |
+| SM011 | set_not_null             | High     |
+| SM012 | add_json_column          | Medium   |
+| SM013 | add_volatile_default     | Medium   |
+| SM014 | add_auto_increment       | Low      |
+| SM015 | add_stored_generated     | Low      |
+| SM016 | rename_schema            | Low      |
+| SM101 | index_columns_count      | Low      |
 
 ## FAQ
 

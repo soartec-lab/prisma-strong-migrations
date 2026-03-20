@@ -16,7 +16,7 @@ When you modify your schema in Prisma, the `prisma migrate dev` command auto-gen
    - Column removal: If migration is applied first, old application code will error
    - Table/column renaming: Similar deployment order issues
    - Rolling deployments may cause errors on some servers
-   
+
    > **Note**: Unlike Rails, Prisma does not cache schema at runtime.
    > However, errors can still occur during deployment timing or rollbacks.
 
@@ -170,35 +170,35 @@ prisma-strong-migrations/
 ### 1. CLI Layer (`src/cli.ts`)
 
 ```typescript
-import { Command } from 'commander';
+import { Command } from "commander";
 
 const program = new Command();
 
 program
-  .name('prisma-strong-migrations')
-  .description('Catch unsafe Prisma migrations before they run')
-  .version('1.0.0');
+  .name("prisma-strong-migrations")
+  .description("Catch unsafe Prisma migrations before they run")
+  .version("1.0.0");
 
 program
-  .command('check [migration]')
-  .description('Check migrations for dangerous operations')
-  .option('-f, --format <format>', 'Output format (console|json)', 'console')
-  .option('-c, --config <path>', 'Path to config file')
-  .option('--no-fail', 'Do not exit with error code on issues')
+  .command("check [migration]")
+  .description("Check migrations for dangerous operations")
+  .option("-f, --format <format>", "Output format (console|json)", "console")
+  .option("-c, --config <path>", "Path to config file")
+  .option("--no-fail", "Do not exit with error code on issues")
   .action(async (migration, options) => {
     // Execute check
   });
 
 program
-  .command('init')
-  .description('Create a config file')
+  .command("init")
+  .description("Create a config file")
   .action(() => {
     // Generate config file
   });
 
 program
-  .command('init-rule <name>')
-  .description('Create a custom rule template')
+  .command("init-rule <name>")
+  .description("Create a custom rule template")
   .action((name) => {
     // Generate custom rule template
   });
@@ -207,53 +207,53 @@ program
 ### 2. SQL Parser (`src/parser/sql-parser.ts`)
 
 ```typescript
-import { parse } from 'pgsql-ast-parser';
+import { parse } from "pgsql-ast-parser";
 
 export interface ParsedStatement {
   type: StatementType;
   raw: string;
   line: number;
-  
+
   // For ALTER TABLE
   table?: string;
   action?: AlterAction;
   column?: string;
   dataType?: string;
-  
+
   // For CREATE INDEX
   indexName?: string;
   columns?: string[];
   concurrently?: boolean;
   unique?: boolean;
-  
+
   // For constraints
   constraintName?: string;
   constraintType?: ConstraintType;
   notValid?: boolean;
 }
 
-export type StatementType = 
-  | 'alter_table'
-  | 'create_index'
-  | 'drop_index'
-  | 'create_table'
-  | 'drop_table'
-  | 'alter_schema'
-  | 'unknown';
+export type StatementType =
+  | "alter_table"
+  | "create_index"
+  | "drop_index"
+  | "create_table"
+  | "drop_table"
+  | "alter_schema"
+  | "unknown";
 
 export type AlterAction =
-  | 'add_column'
-  | 'drop_column'
-  | 'rename_column'
-  | 'alter_column_type'
-  | 'alter_column_set_not_null'
-  | 'alter_column_set_default'
-  | 'add_constraint'
-  | 'rename_table';
+  | "add_column"
+  | "drop_column"
+  | "rename_column"
+  | "alter_column_type"
+  | "alter_column_set_not_null"
+  | "alter_column_set_default"
+  | "add_constraint"
+  | "rename_table";
 
 export function parseMigration(sql: string): ParsedStatement[] {
   const ast = parse(sql);
-  return ast.map(stmt => transformStatement(stmt));
+  return ast.map((stmt) => transformStatement(stmt));
 }
 ```
 
@@ -263,29 +263,29 @@ export function parseMigration(sql: string): ParsedStatement[] {
 export interface Rule {
   /** Unique identifier for the rule */
   name: string;
-  
+
   /** Error code (e.g., SM001) */
   code: string;
-  
+
   /** Severity level */
-  severity: 'error' | 'warning';
-  
+  severity: "error" | "warning";
+
   /** Rule description */
   description: string;
-  
-  /** 
+
+  /**
    * Check if a statement violates this rule
    * @param statement Parsed SQL statement
    * @param context Full migration context
    * @returns true if violation detected
    */
   detect: (statement: ParsedStatement, context: CheckContext) => boolean;
-  
+
   /**
    * Generate error message for violation
    */
   message: (statement: ParsedStatement) => string;
-  
+
   /**
    * Provide safe alternative
    */
@@ -295,10 +295,10 @@ export interface Rule {
 export interface CheckContext {
   /** All statements in the migration */
   statements: ParsedStatement[];
-  
+
   /** Migration file path */
   migrationPath: string;
-  
+
   /** Configuration */
   config: Config;
 }
@@ -314,23 +314,22 @@ export interface CheckResult {
 ### 4. Rule Implementation Example (`src/rules/builtin/remove-column.ts`)
 
 ```typescript
-import { Rule, ParsedStatement } from '../types';
+import { Rule, ParsedStatement } from "../types";
 
 export const removeColumnRule: Rule = {
-  name: 'remove_column',
-  code: 'SM001',
-  severity: 'error',
-  description: 'Removing a column may cause application errors',
-  
+  name: "remove_column",
+  code: "SM001",
+  severity: "error",
+  description: "Removing a column may cause application errors",
+
   detect: (stmt: ParsedStatement): boolean => {
-    return stmt.type === 'alter_table' && 
-           stmt.action === 'drop_column';
+    return stmt.type === "alter_table" && stmt.action === "drop_column";
   },
-  
+
   message: (stmt: ParsedStatement): string => {
     return `Removing column "${stmt.column}" from table "${stmt.table}" may cause errors in your application. Prisma Client still references this column until you regenerate it.`;
   },
-  
+
   suggestion: (stmt: ParsedStatement): string => {
     return `
 ## Safe approach for removing column "${stmt.column}"
@@ -355,52 +354,50 @@ To skip this check, add above the statement:
 ALTER TABLE "${stmt.table}" DROP COLUMN "${stmt.column}";
 \`\`\`
     `.trim();
-  }
+  },
 };
 ```
 
 ### 5. Custom Rule Loader (`src/rules/loader.ts`)
 
 ```typescript
-import * as fs from 'fs';
-import * as path from 'path';
-import { Rule } from './types';
+import * as fs from "fs";
+import * as path from "path";
+import { Rule } from "./types";
 
 export async function loadCustomRules(dir: string): Promise<Rule[]> {
   const rules: Rule[] = [];
-  
+
   if (!fs.existsSync(dir)) {
     return rules;
   }
-  
-  const files = fs.readdirSync(dir).filter(f => 
-    f.endsWith('.js') || f.endsWith('.ts')
-  );
-  
+
+  const files = fs.readdirSync(dir).filter((f) => f.endsWith(".js") || f.endsWith(".ts"));
+
   for (const file of files) {
     const rulePath = path.join(dir, file);
     const ruleModule = await import(rulePath);
     const rule = ruleModule.default || ruleModule;
-    
+
     validateRule(rule);
     rules.push(rule);
   }
-  
+
   return rules;
 }
 
 function validateRule(rule: unknown): asserts rule is Rule {
-  if (!rule || typeof rule !== 'object') {
-    throw new Error('Rule must be an object');
+  if (!rule || typeof rule !== "object") {
+    throw new Error("Rule must be an object");
   }
-  
+
   const r = rule as Record<string, unknown>;
-  
-  if (typeof r.name !== 'string') {
-    throw new Error('Rule must have a name');
+
+  if (typeof r.name !== "string") {
+    throw new Error("Rule must have a name");
   }
-  if (typeof r.detect !== 'function') {
-    throw new Error('Rule must have a detect function');
+  if (typeof r.detect !== "function") {
+    throw new Error("Rule must have a detect function");
   }
   // ... other validations
 }
@@ -412,25 +409,25 @@ function validateRule(rule: unknown): asserts rule is Rule {
 export interface Config {
   /** Rules to disable */
   disabledRules?: string[];
-  
+
   /** Migrations to skip (patterns) */
   ignoreMigrations?: string[];
-  
+
   /** Custom rules directory */
   customRulesDir?: string;
-  
+
   /** Inline custom rules */
   customRules?: Rule[];
-  
+
   /** Promote warnings to errors */
   warningsAsErrors?: boolean;
-  
+
   /** CI settings */
   ci?: {
     failOnWarning?: boolean;
     failOnError?: boolean;
   };
-  
+
   /** Prisma migrations directory */
   migrationsDir?: string;
 }
@@ -438,12 +435,12 @@ export interface Config {
 export const defaultConfig: Config = {
   disabledRules: [],
   ignoreMigrations: [],
-  customRulesDir: './prisma-strong-migrations-rules',
-  migrationsDir: './prisma/migrations',
+  customRulesDir: "./prisma-strong-migrations-rules",
+  migrationsDir: "./prisma/migrations",
   ci: {
     failOnWarning: false,
     failOnError: true,
-  }
+  },
 };
 ```
 
@@ -451,30 +448,30 @@ export const defaultConfig: Config = {
 
 ### Dangerous Operations (Error)
 
-| Code | Name | Detection Pattern | Reason |
-|------|------|-------------------|--------|
-| SM001 | `remove_column` | `DROP COLUMN` | Application errors |
-| SM002 | `rename_column` | `RENAME COLUMN` | Application errors |
-| SM003 | `rename_table` | `RENAME TO` (table) | Application errors |
-| SM004 | `change_column_type` | `ALTER COLUMN ... TYPE` | Table rewrite |
-| SM005 | `add_index` | `CREATE INDEX` (non-CONCURRENTLY) | Write blocking |
-| SM006 | `remove_index` | `DROP INDEX` (non-CONCURRENTLY) | Write blocking |
-| SM007 | `add_foreign_key` | `ADD CONSTRAINT ... FOREIGN KEY` (non-NOT VALID) | Both tables locked |
-| SM008 | `add_check_constraint` | `ADD CONSTRAINT ... CHECK` (non-NOT VALID) | Full row check |
-| SM009 | `add_unique_constraint` | `ADD CONSTRAINT ... UNIQUE` | Read/write blocking |
-| SM010 | `add_exclusion_constraint` | `ADD CONSTRAINT ... EXCLUDE` | Full row check |
-| SM011 | `set_not_null` | `SET NOT NULL` | Full row check |
-| SM012 | `add_json_column` | `ADD COLUMN ... json` | No equality operator |
-| SM013 | `add_volatile_default` | `DEFAULT gen_random_uuid()` etc. | Table rewrite |
-| SM014 | `add_auto_increment` | `SERIAL`, `BIGSERIAL` | Table rewrite |
-| SM015 | `add_stored_generated` | `GENERATED ALWAYS AS ... STORED` | Table rewrite |
-| SM016 | `rename_schema` | `ALTER SCHEMA ... RENAME` | Application errors |
-| SM017 | `create_table_force` | `DROP TABLE IF EXISTS` + `CREATE TABLE` | Data loss |
+| Code  | Name                       | Detection Pattern                                | Reason               |
+| ----- | -------------------------- | ------------------------------------------------ | -------------------- |
+| SM001 | `remove_column`            | `DROP COLUMN`                                    | Application errors   |
+| SM002 | `rename_column`            | `RENAME COLUMN`                                  | Application errors   |
+| SM003 | `rename_table`             | `RENAME TO` (table)                              | Application errors   |
+| SM004 | `change_column_type`       | `ALTER COLUMN ... TYPE`                          | Table rewrite        |
+| SM005 | `add_index`                | `CREATE INDEX` (non-CONCURRENTLY)                | Write blocking       |
+| SM006 | `remove_index`             | `DROP INDEX` (non-CONCURRENTLY)                  | Write blocking       |
+| SM007 | `add_foreign_key`          | `ADD CONSTRAINT ... FOREIGN KEY` (non-NOT VALID) | Both tables locked   |
+| SM008 | `add_check_constraint`     | `ADD CONSTRAINT ... CHECK` (non-NOT VALID)       | Full row check       |
+| SM009 | `add_unique_constraint`    | `ADD CONSTRAINT ... UNIQUE`                      | Read/write blocking  |
+| SM010 | `add_exclusion_constraint` | `ADD CONSTRAINT ... EXCLUDE`                     | Full row check       |
+| SM011 | `set_not_null`             | `SET NOT NULL`                                   | Full row check       |
+| SM012 | `add_json_column`          | `ADD COLUMN ... json`                            | No equality operator |
+| SM013 | `add_volatile_default`     | `DEFAULT gen_random_uuid()` etc.                 | Table rewrite        |
+| SM014 | `add_auto_increment`       | `SERIAL`, `BIGSERIAL`                            | Table rewrite        |
+| SM015 | `add_stored_generated`     | `GENERATED ALWAYS AS ... STORED`                 | Table rewrite        |
+| SM016 | `rename_schema`            | `ALTER SCHEMA ... RENAME`                        | Application errors   |
+| SM017 | `create_table_force`       | `DROP TABLE IF EXISTS` + `CREATE TABLE`          | Data loss            |
 
 ### Best Practices (Warning)
 
-| Code | Name | Detection Pattern | Reason |
-|------|------|-------------------|--------|
+| Code  | Name                  | Detection Pattern                | Reason      |
+| ----- | --------------------- | -------------------------------- | ----------- |
 | SM101 | `index_columns_count` | Non-unique index with 4+ columns | Performance |
 
 ## Skipping Warnings

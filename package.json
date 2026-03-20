@@ -2,10 +2,10 @@
   "name": "prisma-strong-migrations",
   "version": "0.1.0",
   "description": "Detect dangerous operations in Prisma migrations",
-  "type": "module",
   "bin": {
     "prisma-strong-migrations": "./dist/cli.js"
   },
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -14,14 +14,14 @@
     "build": "vp pack"
   },
   "dependencies": {
-    "pgsql-ast-parser": "^12.0.0",
+    "chalk": "^5.0.0",
     "commander": "^11.0.0",
-    "chalk": "^5.0.0"
+    "pgsql-ast-parser": "^12.0.0"
   },
   "devDependencies": {
-    "vite-plus": "latest",
+    "@typescript/native-preview": "latest",
     "@voidzero-dev/vite-plus-core": "latest",
-    "@typescript/native-preview": "latest"
+    "vite-plus": "latest"
   },
   "packageManager": "pnpm@10.32.1"
 }

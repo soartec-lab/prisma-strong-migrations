@@ -1,11 +1,10 @@
-
 # prisma-strong-migrations
 
 Catch unsafe migrations in development for Prisma + PostgreSQL
 
 ✓ Detects potentially dangerous operations  
 ✓ Prevents them from being applied by default  
-✓ Provides instructions on safer ways to do what you want  
+✓ Provides instructions on safer ways to do what you want
 
 Inspired by [strong_migrations](https://github.com/ankane/strong_migrations) for Ruby on Rails.
 
@@ -233,12 +232,12 @@ ALTER TABLE "users" ALTER COLUMN "age" TYPE bigint;
 
 Some changes don't require a table rewrite and are safe in Postgres:
 
-| Type | Safe Changes |
-|------|--------------|
-| `varchar(n)` | Increasing or removing limit, changing to `text` |
-| `text` | Changing to `varchar` with no limit |
-| `numeric(p,s)` | Increasing precision at same scale |
-| `timestamp` | Changing to `timestamptz` when session time zone is UTC |
+| Type           | Safe Changes                                            |
+| -------------- | ------------------------------------------------------- |
+| `varchar(n)`   | Increasing or removing limit, changing to `text`        |
+| `text`         | Changing to `varchar` with no limit                     |
+| `numeric(p,s)` | Increasing precision at same scale                      |
+| `timestamp`    | Changing to `timestamptz` when session time zone is UTC |
 
 #### Good
 
@@ -302,8 +301,8 @@ DROP INDEX CONCURRENTLY "users_email_idx";
 Adding a foreign key blocks writes on both tables.
 
 ```sql
-ALTER TABLE "posts" 
-ADD CONSTRAINT "posts_user_id_fkey" 
+ALTER TABLE "posts"
+ADD CONSTRAINT "posts_user_id_fkey"
 FOREIGN KEY ("user_id") REFERENCES "users"("id");
 ```
 
@@ -312,16 +311,18 @@ FOREIGN KEY ("user_id") REFERENCES "users"("id");
 Add the foreign key without validating existing rows, then validate in a separate migration.
 
 **Migration 1:**
+
 ```sql
-ALTER TABLE "posts" 
-ADD CONSTRAINT "posts_user_id_fkey" 
+ALTER TABLE "posts"
+ADD CONSTRAINT "posts_user_id_fkey"
 FOREIGN KEY ("user_id") REFERENCES "users"("id")
 NOT VALID;
 ```
 
 **Migration 2:**
+
 ```sql
-ALTER TABLE "posts" 
+ALTER TABLE "posts"
 VALIDATE CONSTRAINT "posts_user_id_fkey";
 ```
 
@@ -334,8 +335,8 @@ VALIDATE CONSTRAINT "posts_user_id_fkey";
 Adding a check constraint blocks reads and writes while every row is checked.
 
 ```sql
-ALTER TABLE "products" 
-ADD CONSTRAINT "products_price_check" 
+ALTER TABLE "products"
+ADD CONSTRAINT "products_price_check"
 CHECK (price > 0);
 ```
 
@@ -344,16 +345,18 @@ CHECK (price > 0);
 Add the check constraint without validating existing rows, then validate in a separate migration.
 
 **Migration 1:**
+
 ```sql
-ALTER TABLE "products" 
-ADD CONSTRAINT "products_price_check" 
+ALTER TABLE "products"
+ADD CONSTRAINT "products_price_check"
 CHECK (price > 0)
 NOT VALID;
 ```
 
 **Migration 2:**
+
 ```sql
-ALTER TABLE "products" 
+ALTER TABLE "products"
 VALIDATE CONSTRAINT "products_price_check";
 ```
 
@@ -366,8 +369,8 @@ VALIDATE CONSTRAINT "products_price_check";
 Adding a unique constraint creates a unique index, which blocks reads and writes.
 
 ```sql
-ALTER TABLE "users" 
-ADD CONSTRAINT "users_email_unique" 
+ALTER TABLE "users"
+ADD CONSTRAINT "users_email_unique"
 UNIQUE ("email");
 ```
 
@@ -376,14 +379,16 @@ UNIQUE ("email");
 Create a unique index concurrently, then use it for the constraint.
 
 **Migration 1:**
+
 ```sql
 CREATE UNIQUE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");
 ```
 
 **Migration 2:**
+
 ```sql
-ALTER TABLE "users" 
-ADD CONSTRAINT "users_email_unique" 
+ALTER TABLE "users"
+ADD CONSTRAINT "users_email_unique"
 UNIQUE USING INDEX "users_email_idx";
 ```
 
@@ -396,8 +401,8 @@ UNIQUE USING INDEX "users_email_idx";
 Adding an exclusion constraint blocks reads and writes while every row is checked.
 
 ```sql
-ALTER TABLE "reservations" 
-ADD CONSTRAINT "reservations_no_overlap" 
+ALTER TABLE "reservations"
+ADD CONSTRAINT "reservations_no_overlap"
 EXCLUDE USING gist (room_id WITH =, tsrange(start_time, end_time) WITH &&);
 ```
 
@@ -425,14 +430,16 @@ ALTER TABLE "users" ALTER COLUMN "email" SET NOT NULL;
 Add a check constraint first, then set `NOT NULL`.
 
 **Migration 1:**
+
 ```sql
-ALTER TABLE "users" 
-ADD CONSTRAINT "users_email_not_null" 
+ALTER TABLE "users"
+ADD CONSTRAINT "users_email_not_null"
 CHECK ("email" IS NOT NULL)
 NOT VALID;
 ```
 
 **Migration 2:**
+
 ```sql
 ALTER TABLE "users" VALIDATE CONSTRAINT "users_email_not_null";
 ALTER TABLE "users" ALTER COLUMN "email" SET NOT NULL;
@@ -460,6 +467,7 @@ ALTER TABLE "users" ADD COLUMN "metadata" jsonb;
 ```
 
 In Prisma schema:
+
 ```prisma
 model User {
   metadata Json @db.JsonB
@@ -483,12 +491,14 @@ ALTER TABLE "users" ADD COLUMN "uuid" uuid DEFAULT gen_random_uuid();
 Add the column without a default value, then change the default.
 
 **Migration 1:**
+
 ```sql
 ALTER TABLE "users" ADD COLUMN "uuid" uuid;
 ALTER TABLE "users" ALTER COLUMN "uuid" SET DEFAULT gen_random_uuid();
 ```
 
 Then backfill existing rows in batches (outside a transaction):
+
 ```sql
 UPDATE "users" SET "uuid" = gen_random_uuid() WHERE "uuid" IS NULL;
 ```
@@ -518,8 +528,8 @@ Create a new table and migrate the data with the same steps as [renaming a table
 Adding a stored generated column causes the entire table to be rewritten.
 
 ```sql
-ALTER TABLE "users" 
-ADD COLUMN "full_name" text 
+ALTER TABLE "users"
+ADD COLUMN "full_name" text
 GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;
 ```
 
@@ -603,13 +613,13 @@ Create `prisma-strong-migrations.config.js` in your project root:
 ```javascript
 module.exports = {
   // Disable specific rules globally
-  disabledRules: ['index_columns_count'],
-  
+  disabledRules: ["index_columns_count"],
+
   // Skip specific migrations
-  ignoreMigrations: ['20240101_initial'],
-  
+  ignoreMigrations: ["20240101_initial"],
+
   // Custom rules directory
-  customRulesDir: './prisma-strong-migrations-rules',
+  customRulesDir: "./prisma-strong-migrations-rules",
 };
 ```
 
