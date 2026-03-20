@@ -35,4 +35,5 @@ export interface ParsedStatement {
   constraintType?: ConstraintType;
   notValid?: boolean;
   disabled?: string[];
+  disableReason?: string;
 }
