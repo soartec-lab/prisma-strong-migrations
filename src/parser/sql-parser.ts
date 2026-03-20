@@ -239,6 +239,27 @@ function matchRegexStatement(text: string, line: number): ParsedStatement | null
     return { type: "alterSchema", raw: trimmed, line };
   }
 
+  // ADD CONSTRAINT with NOT VALID (pgsql-ast-parser doesn't support NOT VALID)
+  if (/\bADD\s+CONSTRAINT\b/i.test(trimmed) && NOT_VALID_RE.test(trimmed)) {
+    const tableMatch = trimmed.match(/ALTER\s+TABLE\s+(?:"([^"]+)"|([^\s(]+))/i);
+    const constraintMatch = trimmed.match(/ADD\s+CONSTRAINT\s+(?:"([^"]+)"|([^\s(]+))/i);
+    let constraintType: ConstraintType;
+    if (/\bFOREIGN\s+KEY\b/i.test(trimmed)) constraintType = "foreignKey";
+    else if (/\bCHECK\b/i.test(trimmed)) constraintType = "check";
+    else if (/\bUNIQUE\b/i.test(trimmed)) constraintType = "unique";
+    else return null;
+    return {
+      type: "alterTable",
+      raw: trimmed,
+      line,
+      table: tableMatch?.[1] ?? tableMatch?.[2],
+      action: "addConstraint",
+      constraintType,
+      constraintName: constraintMatch?.[1] ?? constraintMatch?.[2],
+      notValid: true,
+    };
+  }
+
   if (ADD_EXCLUDE_CONSTRAINT_RE.test(trimmed)) {
     const tableMatch = trimmed.match(/ALTER\s+TABLE\s+(?:"([^"]+)"|([^\s(]+))/i);
     const constraintMatch = trimmed.match(/ADD\s+CONSTRAINT\s+(?:"([^"]+)"|([^\s(]+))/i);
