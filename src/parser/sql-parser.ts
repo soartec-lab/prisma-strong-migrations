@@ -8,97 +8,116 @@ import type {
 } from "pgsql-ast-parser";
 import type { ParsedStatement, ConstraintType } from "./types";
 
-const DISABLE_RE = /--\s*prisma-strong-migrations-disable-next-line\s*([\w\s,]*)/;
-const NOT_VALID_RE = /\bNOT\s+VALID\b/i;
-const ALTER_SCHEMA_RENAME_RE = /^\s*ALTER\s+SCHEMA\s+(?:"[^"]+"|[^\s]+)\s+RENAME\s+TO\b/i;
-const ADD_EXCLUDE_CONSTRAINT_RE = /\bADD\s+CONSTRAINT\s+(?:"[^"]+"|[^\s(]+)\s+EXCLUDE\b/i;
+// ---- Constants ----
 
-// ---------- line/offset helpers ----------
+const DISABLE_COMMENT_PATTERN = /--\s*prisma-strong-migrations-disable-next-line\s*([\w\s,]*)/;
 
-function buildLineStarts(sql: string): number[] {
-  const starts = [0];
-  for (let i = 0; i < sql.length; i++) {
-    if (sql[i] === "\n") starts.push(i + 1);
-  }
-  return starts;
+const NOT_VALID_PATTERN = /\bNOT\s+VALID\b/i;
+
+// Matches a quoted identifier ("foo") or an unquoted identifier (foo)
+const IDENT_PATTERN = `(?:"([^"]+)"|([^\\s(]+))`;
+const ALTER_TABLE_PATTERN = new RegExp(`ALTER\\s+TABLE\\s+${IDENT_PATTERN}`, "i");
+const ADD_CONSTRAINT_PATTERN = new RegExp(`ADD\\s+CONSTRAINT\\s+${IDENT_PATTERN}`, "i");
+
+// ---- Line number helpers ----
+
+/** Return the 1-based line number of a given character offset in `sql`. */
+function lineNumberAt(offset: number, sql: string): number {
+  return sql.slice(0, offset).split("\n").length;
 }
 
-function offsetToLine(offset: number, lineStarts: number[]): number {
-  let lo = 0,
-    hi = lineStarts.length - 1;
-  while (lo < hi) {
-    const mid = (lo + hi + 1) >> 1;
-    if (lineStarts[mid] <= offset) lo = mid;
-    else hi = mid - 1;
-  }
-  return lo + 1;
-}
-
-/** Find the first non-whitespace offset at or after `from`. */
-function skipWhitespace(sql: string, from: number): number {
-  let i = from;
-  while (i < sql.length && /\s/.test(sql[i])) i++;
-  return i;
-}
-
-// ---------- disable-comment parsing ----------
+// ---- Disable-comment map ----
 
 /**
- * Scan the raw SQL text for disable-next-line comments.
- * Returns a map of (1-based line number of the NEXT statement) → rule names.
- * Empty array means "disable all rules".
+ * Scan SQL for disable-next-line comments.
+ * Returns a map of { line number of the NEXT line → rule names to disable }.
+ * An empty array means "disable all rules".
  */
 function buildDisableMap(sql: string): Map<number, string[]> {
   const map = new Map<number, string[]>();
-  const lines = sql.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(DISABLE_RE);
-    if (!match) continue;
-    const rulesStr = match[1].trim();
-    const rules = rulesStr ? rulesStr.split(/[\s,]+/).filter(Boolean) : [];
-    map.set(i + 2, rules); // i+1 = this line (1-based), i+2 = next line
-  }
+
+  sql.split("\n").forEach((lineText, lineIndex) => {
+    const match = lineText.match(DISABLE_COMMENT_PATTERN);
+    if (!match) return;
+
+    const rulesText = match[1].trim();
+    const ruleNames = rulesText ? rulesText.split(/[\s,]+/).filter(Boolean) : [];
+    const nextLineNumber = lineIndex + 2; // lineIndex is 0-based; next line is (lineIndex+1)+1
+    map.set(nextLineNumber, ruleNames);
+  });
+
   return map;
 }
 
-// ---------- type helpers ----------
+// ---- Data type helpers ----
 
-function dataTypeName(dt: DataTypeDef): string {
-  if (dt.kind === "array") return dataTypeName(dt.arrayOf) + "[]";
-  return (dt as { name: string }).name.toLowerCase();
+function getDataTypeName(dataType: DataTypeDef): string {
+  if (dataType.kind === "array") return getDataTypeName(dataType.arrayOf) + "[]";
+  return (dataType as { name: string }).name.toLowerCase();
 }
 
-function constraintTypeFor(type: string): ConstraintType | null {
-  if (type === "foreign key") return "foreignKey";
-  if (type === "check") return "check";
-  if (type === "unique") return "unique";
-  return null;
-}
+// ---- Constraint type mapping ----
 
-// ---------- AST → ParsedStatement converters ----------
+const CONSTRAINT_TYPE_MAP: Record<string, ConstraintType> = {
+  "foreign key": "foreignKey",
+  check: "check",
+  unique: "unique",
+};
 
-function convertAlterTable(
-  stmt: AlterTableStatement,
+// ---- AST → ParsedStatement converters ----
+
+function convertAlterColumn(
+  statement: AlterTableStatement,
   raw: string,
   line: number,
 ): ParsedStatement | null {
-  const table = stmt.table.name;
-  const change = stmt.changes[0];
+  const change = statement.changes[0];
+  if (change.type !== "alter column") return null;
+
+  const table = statement.table.name;
+  const column = change.column.name;
+  const alteration = change.alter;
+
+  if (alteration.type === "set type") {
+    return {
+      type: "alterTable",
+      raw,
+      line,
+      table,
+      action: "alterColumnType",
+      column,
+      dataType: getDataTypeName(alteration.dataType),
+    };
+  }
+  if (alteration.type === "set not null") {
+    return { type: "alterTable", raw, line, table, action: "alterColumnSetNotNull", column };
+  }
+  if (alteration.type === "set default") {
+    return { type: "alterTable", raw, line, table, action: "alterColumnSetDefault", column };
+  }
+  return null;
+}
+
+function convertAlterTable(
+  statement: AlterTableStatement,
+  raw: string,
+  line: number,
+): ParsedStatement | null {
+  const table = statement.table.name;
+  const change = statement.changes[0];
   if (!change) return null;
 
   switch (change.type) {
-    case "add column": {
-      const col = change.column;
+    case "add column":
       return {
         type: "alterTable",
         raw,
         line,
         table,
         action: "addColumn",
-        column: col.name.name,
-        dataType: dataTypeName(col.dataType),
+        column: change.column.name.name,
+        dataType: getDataTypeName(change.column.dataType),
       };
-    }
 
     case "drop column":
       return {
@@ -120,47 +139,12 @@ function convertAlterTable(
         column: change.column.name,
       };
 
-    case "alter column": {
-      const alter = change.alter;
-      if (alter.type === "set type") {
-        return {
-          type: "alterTable",
-          raw,
-          line,
-          table,
-          action: "alterColumnType",
-          column: change.column.name,
-          dataType: dataTypeName(alter.dataType),
-        };
-      }
-      if (alter.type === "set not null") {
-        return {
-          type: "alterTable",
-          raw,
-          line,
-          table,
-          action: "alterColumnSetNotNull",
-          column: change.column.name,
-        };
-      }
-      if (alter.type === "set default") {
-        return {
-          type: "alterTable",
-          raw,
-          line,
-          table,
-          action: "alterColumnSetDefault",
-          column: change.column.name,
-        };
-      }
-      return null;
-    }
+    case "alter column":
+      return convertAlterColumn(statement, raw, line);
 
     case "add constraint": {
-      const constraint = change.constraint;
-      const constraintType = constraintTypeFor(constraint.type);
+      const constraintType = CONSTRAINT_TYPE_MAP[change.constraint.type];
       if (!constraintType) return null;
-      const notValid = NOT_VALID_RE.test(raw);
       return {
         type: "alterTable",
         raw,
@@ -168,19 +152,13 @@ function convertAlterTable(
         table,
         action: "addConstraint",
         constraintType,
-        constraintName: constraint.constraintName?.name,
-        ...(notValid ? { notValid: true } : {}),
+        constraintName: change.constraint.constraintName?.name,
+        ...(NOT_VALID_PATTERN.test(raw) ? { notValid: true } : {}),
       };
     }
 
     case "rename":
-      return {
-        type: "alterTable",
-        raw,
-        line,
-        table,
-        action: "renameTable",
-      };
+      return { type: "alterTable", raw, line, table, action: "renameTable" };
 
     default:
       return null;
@@ -188,202 +166,239 @@ function convertAlterTable(
 }
 
 function convertCreateIndex(
-  stmt: CreateIndexStatement,
+  statement: CreateIndexStatement,
   raw: string,
   line: number,
 ): ParsedStatement {
+  const columns = statement.expressions
+    .map((indexExpr) =>
+      indexExpr.expression.type === "ref" ? (indexExpr.expression.name as string) : "",
+    )
+    .filter(Boolean);
+
   return {
     type: "createIndex",
     raw,
     line,
-    table: stmt.table.name,
-    indexName: stmt.indexName?.name,
-    columns: stmt.expressions
-      .map((e) => (e.expression.type === "ref" ? (e.expression.name as string) : ""))
-      .filter(Boolean),
-    concurrently: !!stmt.concurrently,
-    unique: !!stmt.unique,
+    table: statement.table.name,
+    indexName: statement.indexName?.name,
+    columns,
+    concurrently: !!statement.concurrently,
+    unique: !!statement.unique,
   };
 }
 
-function convertDropIndex(stmt: DropStatement, raw: string, line: number): ParsedStatement {
+function convertDropIndex(statement: DropStatement, raw: string, line: number): ParsedStatement {
   return {
     type: "dropIndex",
     raw,
     line,
-    indexName: stmt.names[0]?.name,
-    concurrently: !!stmt.concurrently,
+    indexName: statement.names[0]?.name,
+    concurrently: !!statement.concurrently,
   };
 }
 
-function convertStatement(stmt: Statement, raw: string, line: number): ParsedStatement | null {
-  switch (stmt.type) {
+function convertStatement(statement: Statement, raw: string, line: number): ParsedStatement | null {
+  switch (statement.type) {
     case "alter table":
-      return convertAlterTable(stmt as AlterTableStatement, raw, line);
+      return convertAlterTable(statement as AlterTableStatement, raw, line);
     case "create index":
-      return convertCreateIndex(stmt as CreateIndexStatement, raw, line);
+      return convertCreateIndex(statement as CreateIndexStatement, raw, line);
     case "drop index":
-      return convertDropIndex(stmt as DropStatement, raw, line);
+      return convertDropIndex(statement as DropStatement, raw, line);
     default:
       return null;
   }
 }
 
-// ---------- regex-based fallback for unsupported constructs ----------
+// ---- Regex fallback for constructs pgsql-ast-parser doesn't support ----
+// (EXCLUDE constraints, NOT VALID, ALTER SCHEMA RENAME)
 
-function matchRegexStatement(text: string, line: number): ParsedStatement | null {
-  const trimmed = text.trim();
-  if (!trimmed) return null;
-
-  if (ALTER_SCHEMA_RENAME_RE.test(trimmed)) {
-    return { type: "alterSchema", raw: trimmed, line };
-  }
-
-  // ADD CONSTRAINT with NOT VALID (pgsql-ast-parser doesn't support NOT VALID)
-  if (/\bADD\s+CONSTRAINT\b/i.test(trimmed) && NOT_VALID_RE.test(trimmed)) {
-    const tableMatch = trimmed.match(/ALTER\s+TABLE\s+(?:"([^"]+)"|([^\s(]+))/i);
-    const constraintMatch = trimmed.match(/ADD\s+CONSTRAINT\s+(?:"([^"]+)"|([^\s(]+))/i);
-    let constraintType: ConstraintType;
-    if (/\bFOREIGN\s+KEY\b/i.test(trimmed)) constraintType = "foreignKey";
-    else if (/\bCHECK\b/i.test(trimmed)) constraintType = "check";
-    else if (/\bUNIQUE\b/i.test(trimmed)) constraintType = "unique";
-    else return null;
-    return {
-      type: "alterTable",
-      raw: trimmed,
-      line,
-      table: tableMatch?.[1] ?? tableMatch?.[2],
-      action: "addConstraint",
-      constraintType,
-      constraintName: constraintMatch?.[1] ?? constraintMatch?.[2],
-      notValid: true,
-    };
-  }
-
-  if (ADD_EXCLUDE_CONSTRAINT_RE.test(trimmed)) {
-    const tableMatch = trimmed.match(/ALTER\s+TABLE\s+(?:"([^"]+)"|([^\s(]+))/i);
-    const constraintMatch = trimmed.match(/ADD\s+CONSTRAINT\s+(?:"([^"]+)"|([^\s(]+))/i);
-    return {
-      type: "alterTable",
-      raw: trimmed,
-      line,
-      table: tableMatch?.[1] ?? tableMatch?.[2],
-      action: "addConstraint",
-      constraintType: "exclusion",
-      constraintName: constraintMatch?.[1] ?? constraintMatch?.[2],
-    };
-  }
-
-  return null;
+/** Extract the identifier value from a regex match using the IDENT_PATTERN groups. */
+function extractIdentifier(match: RegExpMatchArray): string | undefined {
+  return match[1] ?? match[2]; // group 1 = quoted, group 2 = unquoted
 }
 
-// ---------- statement splitter (for fallback) ----------
+function matchAlterSchemaRename(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*ALTER\s+SCHEMA\s+/i.test(sql)) return null;
+  if (!/\bRENAME\s+TO\b/i.test(sql)) return null;
+  return { type: "alterSchema", raw: sql, line };
+}
+
+function matchAddConstraintNotValid(sql: string, line: number): ParsedStatement | null {
+  if (!/\bADD\s+CONSTRAINT\b/i.test(sql)) return null;
+  if (!NOT_VALID_PATTERN.test(sql)) return null;
+
+  let constraintType: ConstraintType;
+  if (/\bFOREIGN\s+KEY\b/i.test(sql)) constraintType = "foreignKey";
+  else if (/\bCHECK\b/i.test(sql)) constraintType = "check";
+  else if (/\bUNIQUE\b/i.test(sql)) constraintType = "unique";
+  else return null;
+
+  const tableMatch = sql.match(ALTER_TABLE_PATTERN);
+  const constraintMatch = sql.match(ADD_CONSTRAINT_PATTERN);
+
+  return {
+    type: "alterTable",
+    raw: sql,
+    line,
+    table: tableMatch ? extractIdentifier(tableMatch) : undefined,
+    action: "addConstraint",
+    constraintType,
+    constraintName: constraintMatch ? extractIdentifier(constraintMatch) : undefined,
+    notValid: true,
+  };
+}
+
+function matchAddExcludeConstraint(sql: string, line: number): ParsedStatement | null {
+  if (!/\bADD\s+CONSTRAINT\b/i.test(sql)) return null;
+  if (!/\bEXCLUDE\b/i.test(sql)) return null;
+
+  const tableMatch = sql.match(ALTER_TABLE_PATTERN);
+  const constraintMatch = sql.match(ADD_CONSTRAINT_PATTERN);
+
+  return {
+    type: "alterTable",
+    raw: sql,
+    line,
+    table: tableMatch ? extractIdentifier(tableMatch) : undefined,
+    action: "addConstraint",
+    constraintType: "exclusion",
+    constraintName: constraintMatch ? extractIdentifier(constraintMatch) : undefined,
+  };
+}
+
+function parseWithRegexFallback(sql: string, line: number): ParsedStatement | null {
+  return (
+    matchAlterSchemaRename(sql, line) ??
+    matchAddConstraintNotValid(sql, line) ??
+    matchAddExcludeConstraint(sql, line)
+  );
+}
+
+// ---- Statement splitter (used when full-file parse fails) ----
 
 /**
- * Split SQL into individual statement texts with their start offsets.
- * Handles single-quoted strings and line/block comments.
+ * Split SQL text into individual statements, respecting string literals and comments.
+ * Returns each statement's text and its start offset in the original SQL.
  */
-function splitStatements(sql: string): Array<{ text: string; offset: number }> {
-  const results: Array<{ text: string; offset: number }> = [];
-  let start = 0;
-  let inString = false;
-  let stringChar = "";
-  let i = 0;
+function splitIntoStatements(sql: string): Array<{ text: string; offset: number }> {
+  const statements: Array<{ text: string; offset: number }> = [];
+  let statementStart = 0;
+  let position = 0;
+  let insideString = false;
+  let stringDelimiter = "";
 
-  while (i < sql.length) {
-    const ch = sql[i];
+  while (position < sql.length) {
+    const character = sql[position];
 
-    if (!inString && ch === "-" && sql[i + 1] === "-") {
-      while (i < sql.length && sql[i] !== "\n") i++;
+    // Skip line comments (-- ...)
+    if (!insideString && character === "-" && sql[position + 1] === "-") {
+      while (position < sql.length && sql[position] !== "\n") position++;
       continue;
     }
-    if (!inString && ch === "/" && sql[i + 1] === "*") {
-      i += 2;
-      while (i < sql.length && !(sql[i] === "*" && sql[i + 1] === "/")) i++;
-      i += 2;
+
+    // Skip block comments (/* ... */)
+    if (!insideString && character === "/" && sql[position + 1] === "*") {
+      position += 2;
+      while (position < sql.length && !(sql[position] === "*" && sql[position + 1] === "/")) {
+        position++;
+      }
+      position += 2;
       continue;
     }
-    if (!inString && (ch === "'" || ch === '"')) {
-      inString = true;
-      stringChar = ch;
-      i++;
+
+    // Track string literals
+    if (!insideString && (character === "'" || character === '"')) {
+      insideString = true;
+      stringDelimiter = character;
+      position++;
       continue;
     }
-    if (inString && ch === stringChar) {
-      inString = false;
-      i++;
+    if (insideString && character === stringDelimiter) {
+      insideString = false;
+      position++;
       continue;
     }
-    if (!inString && ch === ";") {
-      results.push({ text: sql.slice(start, i + 1), offset: start });
-      start = i + 1;
+
+    // Statement boundary
+    if (!insideString && character === ";") {
+      statements.push({ text: sql.slice(statementStart, position + 1), offset: statementStart });
+      statementStart = position + 1;
     }
-    i++;
+
+    position++;
   }
 
-  const remaining = sql.slice(start).trim();
-  if (remaining) results.push({ text: remaining, offset: start });
+  const trailingText = sql.slice(statementStart).trim();
+  if (trailingText) statements.push({ text: trailingText, offset: statementStart });
 
-  return results;
+  return statements;
 }
 
-// ---------- public API ----------
+// ---- Raw text and line number extraction from AST location ----
+
+/**
+ * pgsql-ast-parser's _location.start points to the semicolon that ended the
+ * PREVIOUS statement (or 0 for the first statement), and .end points to the
+ * semicolon that ends THIS statement.
+ */
+function getRawTextAndLine(
+  sql: string,
+  location: { start: number; end: number },
+): { raw: string; line: number } {
+  const contentStart = location.start > 0 ? location.start + 1 : 0;
+  const raw = sql.slice(contentStart, location.end + 1).trim();
+  const firstTokenOffset = sql.slice(contentStart).search(/\S/) + contentStart;
+  const line = lineNumberAt(firstTokenOffset, sql);
+  return { raw, line };
+}
+
+// ---- Public API ----
 
 export function parseSql(sql: string): ParsedStatement[] {
-  const lineStarts = buildLineStarts(sql);
   const disableMap = buildDisableMap(sql);
 
-  function applyDisable(parsed: ParsedStatement): void {
-    const disabled = disableMap.get(parsed.line);
-    if (disabled !== undefined) parsed.disabled = disabled;
+  function applyDisableComment(parsedStatement: ParsedStatement): ParsedStatement {
+    const disabledRules = disableMap.get(parsedStatement.line);
+    if (disabledRules !== undefined) parsedStatement.disabled = disabledRules;
+    return parsedStatement;
   }
 
-  // Happy path: parse the entire SQL with pgsql-ast-parser
+  // Fast path: parse the whole file at once
   try {
     const { ast } = parseWithComments(sql, { locationTracking: true });
-    const results: ParsedStatement[] = [];
-    for (const stmt of ast) {
-      const loc = stmt._location;
-      if (!loc) continue;
-      const rawFrom = loc.start > 0 ? loc.start + 1 : 0;
-      const raw = sql.slice(rawFrom, loc.end + 1).trim();
-      const line = offsetToLine(skipWhitespace(sql, rawFrom), lineStarts);
-      const parsed = convertStatement(stmt, raw, line);
-      if (!parsed) continue;
-      applyDisable(parsed);
-      results.push(parsed);
-    }
-    return results;
+    return ast.flatMap((statement) => {
+      if (!statement._location) return [];
+      const { raw, line } = getRawTextAndLine(sql, statement._location);
+      const parsed = convertStatement(statement, raw, line);
+      return parsed ? [applyDisableComment(parsed)] : [];
+    });
   } catch {
-    // Whole-file parse failed → fall back to per-statement parsing
+    // pgsql-ast-parser failed on the whole file (e.g. EXCLUDE constraints, NOT VALID)
+    // Fall back to parsing each statement individually
   }
 
-  // Fallback: parse each statement individually
-  const results: ParsedStatement[] = [];
-  for (const { text, offset } of splitStatements(sql)) {
-    const contentStart = skipWhitespace(sql, offset);
-    const line = offsetToLine(contentStart, lineStarts);
-    const trimmed = text.trim();
-    if (!trimmed || trimmed === ";") continue;
+  // Slow path: split into individual statements and parse each one
+  return splitIntoStatements(sql).flatMap(({ text, offset }) => {
+    const trimmed = text.trim().replace(/;$/, "");
+    if (!trimmed) return [];
 
-    let parsed: ParsedStatement | null = null;
+    const firstTokenOffset = offset + text.search(/\S/);
+    const line = lineNumberAt(firstTokenOffset, sql);
 
-    const singleSql = trimmed.endsWith(";") ? trimmed : trimmed + ";";
+    // Try AST parse for this single statement
     try {
-      const { ast: singleAst } = parseWithComments(singleSql, {
-        locationTracking: true,
-      });
-      if (singleAst[0]) {
-        parsed = convertStatement(singleAst[0], trimmed, line);
+      const { ast } = parseWithComments(trimmed + ";", { locationTracking: true });
+      if (ast[0]) {
+        const parsed = convertStatement(ast[0], trimmed, line);
+        return parsed ? [applyDisableComment(parsed)] : [];
       }
     } catch {
-      parsed = matchRegexStatement(trimmed, line);
+      // AST parse failed → try regex patterns
     }
 
-    if (!parsed) continue;
-    applyDisable(parsed);
-    results.push(parsed);
-  }
-
-  return results;
+    const parsed = parseWithRegexFallback(trimmed, line);
+    return parsed ? [applyDisableComment(parsed)] : [];
+  });
 }
