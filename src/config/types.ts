@@ -1,4 +1,4 @@
-import type { Rule } from '../rules/types';
+import type { Rule } from "../rules/types";
 
 export interface Config {
   disabledRules?: string[];
@@ -16,12 +16,12 @@ export interface Config {
 export const DEFAULT_CONFIG: Required<Config> = {
   disabledRules: [],
   ignoreMigrations: [],
-  customRulesDir: './prisma-strong-migrations-rules',
+  customRulesDir: "./prisma-strong-migrations-rules",
   customRules: [],
   warningsAsErrors: false,
   ci: {
     failOnWarning: false,
     failOnError: true,
   },
-  migrationsDir: './prisma/migrations',
+  migrationsDir: "./prisma/migrations",
 };

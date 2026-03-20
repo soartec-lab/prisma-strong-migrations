@@ -1,7 +1,7 @@
-import type { ParsedStatement } from '../parser/types';
-import type { Config } from '../config/types';
+import type { ParsedStatement } from "../parser/types";
+import type { Config } from "../config/types";
 
-export type Severity = 'error' | 'warning';
+export type Severity = "error" | "warning";
 
 export interface CheckContext {
   statements: ParsedStatement[];
