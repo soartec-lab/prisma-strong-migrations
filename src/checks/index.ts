@@ -1,0 +1,9 @@
+export { dropColumn } from "./drop-column";
+export { dropTable } from "./drop-table";
+export { addIndexWithoutConcurrently } from "./add-index-without-concurrently";
+export { addColumnNotNull } from "./add-column-not-null";
+export { changeColumnType } from "./change-column-type";
+export { renameColumn } from "./rename-column";
+export { renameTable } from "./rename-table";
+export { setNotNull } from "./set-not-null";
+export { addUniqueConstraint } from "./add-unique-constraint";
