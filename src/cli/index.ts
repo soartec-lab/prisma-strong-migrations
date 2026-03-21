@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { registerCheckCommand } from "./check";
-import { registerInitCommand } from "./init";
-import { registerInitRuleCommand } from "./init-rule";
-import { registerMigrateCommand } from "./migrate/index";
+import { registerCheckCommand } from "./commands/check";
+import { registerInitCommand } from "./commands/init";
+import { registerInitRuleCommand } from "./commands/init-rule";
+import { registerMigrateCommand } from "./commands/migrate/index";
 
 const program = new Command();
 

@@ -1,11 +1,11 @@
 import { Command } from "commander";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { check } from "../checker";
-import { consoleReport } from "../reporter/console-reporter";
-import { jsonReport } from "../reporter/json-reporter";
-import { loadConfig } from "../config/loader";
-import { loadCustomRules } from "../rules/loader";
+import { check } from "../../checker";
+import { consoleReport } from "../../reporter/console-reporter";
+import { jsonReport } from "../../reporter/json-reporter";
+import { loadConfig } from "../../config/loader";
+import { loadCustomRules } from "../../rules/loader";
 import { findMigrationFiles } from "./find-migration-files";
 
 export function registerCheckCommand(program: Command): void {

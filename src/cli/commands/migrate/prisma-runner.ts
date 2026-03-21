@@ -2,9 +2,9 @@ import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { check } from "../../checker";
-import { consoleReport } from "../../reporter/console-reporter";
-import { loadConfig } from "../../config/loader";
+import { check } from "../../../checker";
+import { consoleReport } from "../../../reporter/console-reporter";
+import { loadConfig } from "../../../config/loader";
 import { findMigrationFiles } from "../find-migration-files";
 
 export function findPrismaBin(): string {

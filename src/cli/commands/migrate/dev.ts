@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { resolve } from "node:path";
-import { loadConfig } from "../../config/loader";
-import { loadCustomRules } from "../../rules/loader";
+import { loadConfig } from "../../../config/loader";
+import { loadCustomRules } from "../../../rules/loader";
 import { findMigrationFiles } from "../find-migration-files";
 import { runCheckAndReport, runPrisma } from "./prisma-runner";
 
