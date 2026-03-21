@@ -381,6 +381,46 @@ function matchVacuum(sql: string, line: number): ParsedStatement | null {
   };
 }
 
+function matchValidateConstraint(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*ALTER\s+TABLE\b/i.test(sql)) return null;
+  if (!/\bVALIDATE\s+CONSTRAINT\b/i.test(sql)) return null;
+  const tableMatch = sql.match(ALTER_TABLE_PATTERN);
+  const constraintMatch = sql.match(/VALIDATE\s+CONSTRAINT\s+(?:"([^"]+)"|(\S+))/i);
+  return {
+    type: "validateConstraint",
+    raw: sql,
+    line,
+    table: tableMatch ? extractIdentifier(tableMatch) : undefined,
+    constraintName: constraintMatch ? (constraintMatch[1] ?? constraintMatch[2]) : undefined,
+  };
+}
+
+function matchUpdateStatement(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*UPDATE\b/i.test(sql)) return null;
+  const hasWhere = /\bWHERE\b/i.test(sql);
+  const tableMatch = sql.match(/UPDATE\s+(?:"([^"]+)"|(\S+))/i);
+  return {
+    type: "updateStatement",
+    raw: sql,
+    line,
+    table: tableMatch ? (tableMatch[1] ?? tableMatch[2]) : undefined,
+    hasWhere,
+  };
+}
+
+function matchDeleteStatement(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*DELETE\s+FROM\b/i.test(sql)) return null;
+  const hasWhere = /\bWHERE\b/i.test(sql);
+  const tableMatch = sql.match(/DELETE\s+FROM\s+(?:"([^"]+)"|(\S+))/i);
+  return {
+    type: "deleteStatement",
+    raw: sql,
+    line,
+    table: tableMatch ? (tableMatch[1] ?? tableMatch[2]) : undefined,
+    hasWhere,
+  };
+}
+
 function parseWithRegexFallback(sql: string, line: number): ParsedStatement | null {
   return (
     matchAlterSchemaRename(sql, line) ??
@@ -391,7 +431,10 @@ function parseWithRegexFallback(sql: string, line: number): ParsedStatement | nu
     matchClusterTable(sql, line) ??
     matchDisableTrigger(sql, line) ??
     matchCreateTableAsSelect(sql, line) ??
-    matchVacuum(sql, line)
+    matchVacuum(sql, line) ??
+    matchValidateConstraint(sql, line) ??
+    matchUpdateStatement(sql, line) ??
+    matchDeleteStatement(sql, line)
   );
 }
 

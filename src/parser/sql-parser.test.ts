@@ -302,4 +302,75 @@ CREATE INDEX CONCURRENTLY "idx" ON "orders"("status");`;
       });
     });
   });
+
+  describe("VALIDATE CONSTRAINT", () => {
+    it("VALIDATE CONSTRAINT → validateConstraint", () => {
+      const results = parseSql(
+        `ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";`,
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        type: "validateConstraint",
+        table: "orders",
+        constraintName: "orders_user_id_fkey",
+        line: 1,
+      });
+    });
+
+    it("unquoted constraint name", () => {
+      const results = parseSql(`ALTER TABLE "users" VALIDATE CONSTRAINT chk_age;`);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        type: "validateConstraint",
+        table: "users",
+        constraintName: "chk_age",
+      });
+    });
+  });
+
+  describe("UPDATE", () => {
+    it("UPDATE without WHERE → updateStatement with hasWhere: false", () => {
+      const results = parseSql(`UPDATE "users" SET "name" = 'foo';`);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        type: "updateStatement",
+        table: "users",
+        hasWhere: false,
+        line: 1,
+      });
+    });
+
+    it("UPDATE with WHERE → updateStatement with hasWhere: true", () => {
+      const results = parseSql(`UPDATE "users" SET "name" = 'foo' WHERE id = 1;`);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        type: "updateStatement",
+        table: "users",
+        hasWhere: true,
+      });
+    });
+  });
+
+  describe("DELETE FROM", () => {
+    it("DELETE FROM without WHERE → deleteStatement with hasWhere: false", () => {
+      const results = parseSql(`DELETE FROM "users";`);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        type: "deleteStatement",
+        table: "users",
+        hasWhere: false,
+        line: 1,
+      });
+    });
+
+    it("DELETE FROM with WHERE → deleteStatement with hasWhere: true", () => {
+      const results = parseSql(`DELETE FROM "users" WHERE id = 1;`);
+      expect(results).toHaveLength(1);
+      expect(results[0]).toMatchObject({
+        type: "deleteStatement",
+        table: "users",
+        hasWhere: true,
+      });
+    });
+  });
 });

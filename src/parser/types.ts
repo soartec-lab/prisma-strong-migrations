@@ -12,6 +12,9 @@ export type StatementType =
   | "disableTrigger"
   | "createTableAsSelect"
   | "vacuum"
+  | "validateConstraint"
+  | "updateStatement"
+  | "deleteStatement"
   | "unknown";
 
 export type AlterAction =
@@ -45,4 +48,5 @@ export interface ParsedStatement {
   hasDefault?: boolean;
   disabled?: string[];
   disableReason?: string;
+  hasWhere?: boolean;
 }
