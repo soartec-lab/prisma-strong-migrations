@@ -65,7 +65,7 @@ model Post {
 #### Step 2: Generate the migration and run the safety check
 
 ```bash
-pnpm exec prisma-strong-migrations migrate dev --name add_index_posts_user_id
+vp exec prisma-strong-migrations migrate dev --name add_index_posts_user_id
 ```
 
 `prisma-strong-migrations migrate dev` creates the migration with `--create-only`,
@@ -91,7 +91,7 @@ CREATE INDEX CONCURRENTLY "posts_user_id_idx" ON "posts"("user_id");
 #### Step 4: Re-run the check — no errors
 
 ```bash
-pnpm exec prisma-strong-migrations check
+vp exec prisma-strong-migrations check
 ```
 
 ```
@@ -115,7 +115,7 @@ Remove the `name` field from the `User` model.
 #### Step 2: Generate the migration
 
 ```bash
-pnpm exec prisma-strong-migrations migrate dev --name drop_users_name
+vp exec prisma-strong-migrations migrate dev --name drop_users_name
 ```
 
 Expected output:
@@ -154,7 +154,7 @@ model Post {
 #### Step 2: Generate the migration
 
 ```bash
-pnpm exec prisma-strong-migrations migrate dev --name change_posts_body_type
+vp exec prisma-strong-migrations migrate dev --name change_posts_body_type
 ```
 
 Expected output:
@@ -172,10 +172,10 @@ error [changeColumnType] prisma/migrations/.../migration.sql line 2
 | -------------------------------------------------------------- | --------------------------------------------------- |
 | `docker compose up -d`                                         | Start PostgreSQL                                    |
 | `docker compose down`                                          | Stop PostgreSQL                                     |
-| `pnpm exec prisma-strong-migrations migrate dev --name <name>` | Generate migration → check → apply (stops on error) |
-| `pnpm exec prisma-strong-migrations check`                     | Check all existing migrations                       |
-| `pnpm exec prisma-strong-migrations check --fix`               | Auto-fix where possible (e.g. adds CONCURRENTLY)    |
-| `pnpm exec prisma-strong-migrations check --format json`       | Output results as JSON                              |
+| `vp exec prisma-strong-migrations migrate dev --name <name>` | Generate migration → check → apply (stops on error) |
+| `vp exec prisma-strong-migrations check`                     | Check all existing migrations                       |
+| `vp exec prisma-strong-migrations check --fix`               | Auto-fix where possible (e.g. adds CONCURRENTLY)    |
+| `vp exec prisma-strong-migrations check --format json`       | Output results as JSON                              |
 | `pnpm exec prisma migrate dev`                                 | Apply already-fixed migrations                      |
 
 ---
