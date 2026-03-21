@@ -12,7 +12,7 @@
   "scripts": {
     "test": "vp test",
     "check": "vp check",
-    "build": "vp pack",
+    "build": "vp pack src/index.ts src/cli/index.ts",
     "knip": "knip"
   },
   "dependencies": {
