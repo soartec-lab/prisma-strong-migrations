@@ -33,6 +33,7 @@ import { deleteWithoutWhereRule } from "./delete-without-where";
 import { backfillInMigrationRule } from "./backfill-in-migration";
 import { enumValueRemovalRule } from "./enum-value-removal";
 import { implicitM2mTableChangeRule } from "./implicit-m2m-table-change";
+import { implicitM2mRelationRule } from "./implicit-m2m-relation";
 import { intPrimaryKeyRule } from "./int-primary-key";
 import { cuidUuidDefaultRemovalRule } from "./cuid-uuid-default-removal";
 import { prismaManagedColumnChangeRule } from "./prisma-managed-column-change";
@@ -71,6 +72,7 @@ export const builtinRules: Rule[] = [
   backfillInMigrationRule,
   enumValueRemovalRule,
   implicitM2mTableChangeRule,
+  implicitM2mRelationRule,
   intPrimaryKeyRule,
   cuidUuidDefaultRemovalRule,
   prismaManagedColumnChangeRule,
