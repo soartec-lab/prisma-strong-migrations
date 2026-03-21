@@ -2,6 +2,7 @@ import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   pack: {
+    hash: false,
     entry: {
       index: "./src/index.ts",
       "bin/cli": "./src/cli/index.ts",
