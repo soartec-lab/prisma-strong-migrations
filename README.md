@@ -772,6 +772,142 @@ CREATE INDEX CONCURRENTLY "users_idx" ON "users"("d", "b");
 
 ---
 
+### Using CONCURRENTLY without disabling the transaction
+
+#### Bad
+
+Prisma wraps every migration in a transaction. PostgreSQL does not allow `CONCURRENTLY` operations inside a transaction block, so the migration will fail at runtime.
+
+```sql
+CREATE INDEX CONCURRENTLY "idx_users_email" ON "users"("email");
+```
+
+#### Good
+
+Add `-- prisma-migrate-disable-next-transaction` as the first line of the file and keep the file to one statement:
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "idx_users_email" ON "users"("email");
+```
+
+---
+
+### Adding NOT VALID and VALIDATE CONSTRAINT in the same file
+
+#### Bad
+
+`NOT VALID` is meant to defer the expensive table scan to a later `VALIDATE CONSTRAINT` step. Putting both in the same file negates the optimization — the full table scan still occurs.
+
+```sql
+ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey"
+  FOREIGN KEY ("user_id") REFERENCES "users"("id") NOT VALID;
+ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";
+```
+
+#### Good
+
+Split into two separate migration files:
+
+```sql
+-- migration_1.sql
+ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey"
+  FOREIGN KEY ("user_id") REFERENCES "users"("id") NOT VALID;
+
+-- migration_2.sql (deploy after migration_1)
+ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";
+```
+
+---
+
+### Multiple statements with disabled transaction
+
+#### Bad
+
+When `-- prisma-migrate-disable-next-transaction` is present, the whole file runs without a transaction. If any statement fails, earlier statements cannot be rolled back.
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "idx_a" ON "users"("email");
+ALTER TABLE "users" ADD COLUMN "name" text;
+```
+
+#### Good
+
+Keep files with a disabled transaction to one SQL statement only:
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "idx_a" ON "users"("email");
+```
+
+---
+
+### UPDATE without WHERE clause
+
+#### Bad
+
+An `UPDATE` without a `WHERE` clause updates every row in the table, which can lock the table for a long time on large datasets.
+
+```sql
+UPDATE "users" SET "status" = 'active';
+```
+
+#### Good
+
+Add a `WHERE` clause to limit the affected rows:
+
+```sql
+UPDATE "users" SET "status" = 'active' WHERE "status" IS NULL;
+```
+
+---
+
+### DELETE FROM without WHERE clause
+
+#### Bad
+
+A `DELETE FROM` without a `WHERE` clause deletes every row in the table.
+
+```sql
+DELETE FROM "sessions";
+```
+
+#### Good
+
+Add a `WHERE` clause to limit the deleted rows:
+
+```sql
+DELETE FROM "sessions" WHERE "expires_at" < NOW();
+```
+
+---
+
+### Mixing schema changes and data backfill
+
+#### Bad
+
+Combining `ALTER TABLE` schema changes with `UPDATE` backfill in one migration can cause long-running locks on large tables.
+
+```sql
+ALTER TABLE "users" ADD COLUMN "full_name" text;
+UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
+```
+
+#### Good
+
+Split into two separate migration files:
+
+```sql
+-- migration_1.sql: schema change only
+ALTER TABLE "users" ADD COLUMN "full_name" text;
+
+-- migration_2.sql: backfill only
+UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
+```
+
+---
+
 ## Skipping Checks
 
 If you've reviewed the warning and want to proceed anyway, add a disable comment:
