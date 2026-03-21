@@ -174,7 +174,6 @@ Expected detection results.
   "errors": [
     {
       "rule": "remove_column",
-      "code": "SM001",
       "line": 3,
       "column": "name",
       "table": "users"
@@ -197,12 +196,12 @@ Tests detection of column removal.
 
 ## Expected Behavior
 
-- `remove_column` rule (SM001) should be detected
+- `remove_column` rule should be detected
 - Should be reported as an error
 
 ## Related Rules
 
-- SM001: remove_column
+- remove_column
 ```
 
 ### Integration Test Examples
@@ -229,7 +228,6 @@ ALTER TABLE "users" DROP COLUMN "name";
   "errors": [
     {
       "rule": "remove_column",
-      "code": "SM001",
       "line": 1
     }
   ],
@@ -316,7 +314,6 @@ ALTER TABLE "users" DROP COLUMN "old_email";
   "errors": [
     {
       "rule": "add_index",
-      "code": "SM005",
       "line": 5
     }
   ],

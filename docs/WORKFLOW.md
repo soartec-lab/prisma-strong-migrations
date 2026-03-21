@@ -58,7 +58,7 @@ Follow the warning instructions to perform the migration safely.
 **Warning:**
 
 ```
-=== ❌ Dangerous operation detected [SM001] ===
+=== ❌ Dangerous operation detected ===
 
 📍 Line 1: ALTER TABLE "users" DROP COLUMN "name"
 
@@ -136,7 +136,7 @@ npx prisma migrate dev --create-only --name remove_user_name
 
 # 3. Check
 npx prisma-strong-migrations check
-# → SM001 remove_column warning
+# → remove_column warning
 
 # 4. Choose approach
 #    A) Staged migration: Remove references from code → Deploy → Migration
@@ -171,7 +171,7 @@ npx prisma migrate dev --create-only --name add_user_email_index
 
 # 3. Check
 npx prisma-strong-migrations check
-# → SM005 add_index warning (non-CONCURRENTLY)
+# → add_index warning (non-CONCURRENTLY)
 
 # 4. Manually edit migration.sql
 vim prisma/migrations/20240320_add_user_email_index/migration.sql
@@ -205,7 +205,7 @@ npx prisma migrate dev --create-only --name add_post_user_fk
 
 # 3. Check
 npx prisma-strong-migrations check
-# → SM007 add_foreign_key warning (no NOT VALID)
+# → add_foreign_key warning (no NOT VALID)
 
 # 4. Manually edit migration.sql and split into two migrations
 

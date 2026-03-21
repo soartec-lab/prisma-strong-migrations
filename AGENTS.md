@@ -241,7 +241,7 @@ Implement each rule individually:
 **Commit examples:**
 
 ```
-feat(rules): add remove_column rule (SM001)
+feat(rules): add remove_column rule
 test(rules): add remove_column unit tests
 test(integration): add remove_column test case
 ```
@@ -312,7 +312,6 @@ import { Rule, ParsedStatement } from "../types";
 
 export const removeColumnRule: Rule = {
   name: "remove_column",
-  code: "SM001",
   severity: "error",
   description: "Removing a column may cause application errors",
 
@@ -479,25 +478,25 @@ Checklist for implementing each feature:
 
 Rules to implement:
 
-| Code  | Name                     | Priority |
-| ----- | ------------------------ | -------- |
-| SM001 | remove_column            | High     |
-| SM002 | rename_column            | High     |
-| SM003 | rename_table             | High     |
-| SM004 | change_column_type       | High     |
-| SM005 | add_index                | High     |
-| SM006 | remove_index             | Medium   |
-| SM007 | add_foreign_key          | High     |
-| SM008 | add_check_constraint     | Medium   |
-| SM009 | add_unique_constraint    | Medium   |
-| SM010 | add_exclusion_constraint | Low      |
-| SM011 | set_not_null             | High     |
-| SM012 | add_json_column          | Medium   |
-| SM013 | add_volatile_default     | Medium   |
-| SM014 | add_auto_increment       | Low      |
-| SM015 | add_stored_generated     | Low      |
-| SM016 | rename_schema            | Low      |
-| SM101 | index_columns_count      | Low      |
+| Name                     | Priority |
+| ------------------------ | -------- |
+| remove_column            | High     |
+| rename_column            | High     |
+| rename_table             | High     |
+| change_column_type       | High     |
+| add_index                | High     |
+| remove_index             | Medium   |
+| add_foreign_key          | High     |
+| add_check_constraint     | Medium   |
+| add_unique_constraint    | Medium   |
+| add_exclusion_constraint | Low      |
+| set_not_null             | High     |
+| add_json_column          | Medium   |
+| add_volatile_default     | Medium   |
+| add_auto_increment       | Low      |
+| add_stored_generated     | Low      |
+| rename_schema            | Low      |
+| index_columns_count      | Low      |
 
 ## FAQ
 

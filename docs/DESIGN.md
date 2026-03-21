@@ -264,7 +264,7 @@ export interface Rule {
   /** Unique identifier for the rule */
   name: string;
 
-  /** Error code (e.g., SM001) */
+  /** Error code */
   code: string;
 
   /** Severity level */
@@ -318,7 +318,6 @@ import { Rule, ParsedStatement } from "../types";
 
 export const removeColumnRule: Rule = {
   name: "remove_column",
-  code: "SM001",
   severity: "error",
   description: "Removing a column may cause application errors",
 
@@ -448,31 +447,31 @@ export const defaultConfig: Config = {
 
 ### Dangerous Operations (Error)
 
-| Code  | Name                       | Detection Pattern                                | Reason               |
-| ----- | -------------------------- | ------------------------------------------------ | -------------------- |
-| SM001 | `remove_column`            | `DROP COLUMN`                                    | Application errors   |
-| SM002 | `rename_column`            | `RENAME COLUMN`                                  | Application errors   |
-| SM003 | `rename_table`             | `RENAME TO` (table)                              | Application errors   |
-| SM004 | `change_column_type`       | `ALTER COLUMN ... TYPE`                          | Table rewrite        |
-| SM005 | `add_index`                | `CREATE INDEX` (non-CONCURRENTLY)                | Write blocking       |
-| SM006 | `remove_index`             | `DROP INDEX` (non-CONCURRENTLY)                  | Write blocking       |
-| SM007 | `add_foreign_key`          | `ADD CONSTRAINT ... FOREIGN KEY` (non-NOT VALID) | Both tables locked   |
-| SM008 | `add_check_constraint`     | `ADD CONSTRAINT ... CHECK` (non-NOT VALID)       | Full row check       |
-| SM009 | `add_unique_constraint`    | `ADD CONSTRAINT ... UNIQUE`                      | Read/write blocking  |
-| SM010 | `add_exclusion_constraint` | `ADD CONSTRAINT ... EXCLUDE`                     | Full row check       |
-| SM011 | `set_not_null`             | `SET NOT NULL`                                   | Full row check       |
-| SM012 | `add_json_column`          | `ADD COLUMN ... json`                            | No equality operator |
-| SM013 | `add_volatile_default`     | `DEFAULT gen_random_uuid()` etc.                 | Table rewrite        |
-| SM014 | `add_auto_increment`       | `SERIAL`, `BIGSERIAL`                            | Table rewrite        |
-| SM015 | `add_stored_generated`     | `GENERATED ALWAYS AS ... STORED`                 | Table rewrite        |
-| SM016 | `rename_schema`            | `ALTER SCHEMA ... RENAME`                        | Application errors   |
-| SM017 | `create_table_force`       | `DROP TABLE IF EXISTS` + `CREATE TABLE`          | Data loss            |
+| Name                       | Detection Pattern                                | Reason               |
+| -------------------------- | ------------------------------------------------ | -------------------- |
+| `remove_column`            | `DROP COLUMN`                                    | Application errors   |
+| `rename_column`            | `RENAME COLUMN`                                  | Application errors   |
+| `rename_table`             | `RENAME TO` (table)                              | Application errors   |
+| `change_column_type`       | `ALTER COLUMN ... TYPE`                          | Table rewrite        |
+| `add_index`                | `CREATE INDEX` (non-CONCURRENTLY)                | Write blocking       |
+| `remove_index`             | `DROP INDEX` (non-CONCURRENTLY)                  | Write blocking       |
+| `add_foreign_key`          | `ADD CONSTRAINT ... FOREIGN KEY` (non-NOT VALID) | Both tables locked   |
+| `add_check_constraint`     | `ADD CONSTRAINT ... CHECK` (non-NOT VALID)       | Full row check       |
+| `add_unique_constraint`    | `ADD CONSTRAINT ... UNIQUE`                      | Read/write blocking  |
+| `add_exclusion_constraint` | `ADD CONSTRAINT ... EXCLUDE`                     | Full row check       |
+| `set_not_null`             | `SET NOT NULL`                                   | Full row check       |
+| `add_json_column`          | `ADD COLUMN ... json`                            | No equality operator |
+| `add_volatile_default`     | `DEFAULT gen_random_uuid()` etc.                 | Table rewrite        |
+| `add_auto_increment`       | `SERIAL`, `BIGSERIAL`                            | Table rewrite        |
+| `add_stored_generated`     | `GENERATED ALWAYS AS ... STORED`                 | Table rewrite        |
+| `rename_schema`            | `ALTER SCHEMA ... RENAME`                        | Application errors   |
+| `create_table_force`       | `DROP TABLE IF EXISTS` + `CREATE TABLE`          | Data loss            |
 
 ### Best Practices (Warning)
 
-| Code  | Name                  | Detection Pattern                | Reason      |
-| ----- | --------------------- | -------------------------------- | ----------- |
-| SM101 | `index_columns_count` | Non-unique index with 4+ columns | Performance |
+| Name                  | Detection Pattern                | Reason      |
+| --------------------- | -------------------------------- | ----------- |
+| `index_columns_count` | Non-unique index with 4+ columns | Performance |
 
 ## Skipping Warnings
 
