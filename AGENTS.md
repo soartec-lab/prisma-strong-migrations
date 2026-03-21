@@ -69,6 +69,23 @@ git commit -m "add parser and tests and rules"
 - After fixing a bug → commit
 - After updating documentation → commit
 
+#### Installing New Libraries
+
+Always separate library installation from the changes that use it.
+
+```bash
+# ✅ Good: Installation and fixes in separate commits
+git add package.json pnpm-lock.yaml knip.json
+git commit -m "chore: add knip for unused code detection"
+
+git add src/...
+git commit -m "fix: resolve knip findings"
+
+# ❌ Bad: Installation and fixes in the same commit
+git add .
+git commit -m "add knip and fix unused exports"
+```
+
 #### Commit Message Format
 
 ```
