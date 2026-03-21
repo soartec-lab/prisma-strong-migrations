@@ -1,5 +1,5 @@
 import { parseSql } from "./parser/sql-parser";
-import { builtinRules } from "./rules/builtin/index";
+import { builtinRules } from "./rules";
 import type { Config } from "./config/types";
 import type { CheckResult } from "./rules/types";
 
