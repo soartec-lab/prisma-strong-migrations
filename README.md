@@ -908,6 +908,109 @@ UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
 
 ---
 
+### Removing an ENUM value
+
+Prisma recreates the ENUM type when removing a value. If existing data contains the removed value, the migration will fail.
+
+```sql
+-- ❌ Bad: will fail if existing rows have the removed value
+ALTER TYPE "Role" RENAME TO "Role_old";
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER');
+ALTER TABLE "User" ALTER COLUMN "role" TYPE "Role" USING "role"::text::"Role";
+DROP TYPE "Role_old";
+```
+
+```sql
+-- ✅ Good: backfill data before removing the enum value
+UPDATE "User" SET "role" = 'ADMIN' WHERE "role" = 'MEMBER';
+-- then apply the migration after deploying code that no longer references MEMBER
+```
+
+---
+
+### Directly modifying an implicit M2M table
+
+Prisma auto-manages join tables named `_AToB`. Direct modifications break Prisma's relation management.
+
+```sql
+-- ❌ Bad: bypasses Prisma's M2M management
+ALTER TABLE "_CategoryToPost" ADD COLUMN "extra" TEXT;
+```
+
+```prisma
+-- ✅ Good: convert to explicit M2M in schema.prisma
+model CategoriesOnPosts {
+  postId     Int
+  categoryId Int
+  post       Post     @relation(fields: [postId], references: [id])
+  category   Category @relation(fields: [categoryId], references: [id])
+  @@id([postId, categoryId])
+}
+```
+
+---
+
+### Using SERIAL (32-bit) for a primary key
+
+`SERIAL` has a maximum of ~2.1 billion rows. Migrating to `BigInt` later is nearly impossible in production.
+
+```sql
+-- ❌ Bad: 32-bit integer, max ~2.1 billion rows
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    ...
+);
+```
+
+```prisma
+-- ✅ Good: use BigInt or UUID v7 in schema.prisma
+model User {
+  id BigInt @id @default(autoincrement())
+  -- or
+  id String @id @default(uuid(7))
+}
+```
+
+---
+
+### Dropping the default from an id column
+
+Dropping a database-level default from the `id` column can break ID generation for inserts that bypass Prisma Client.
+
+```sql
+-- ❌ Bad: breaks ID generation if the column relies on a DB default
+ALTER TABLE "User" ALTER COLUMN "id" DROP DEFAULT;
+```
+
+```prisma
+-- ✅ Good: change ID strategy in schema.prisma and let Prisma regenerate
+model User {
+  id String @id @default(uuid(7))
+}
+```
+
+---
+
+### Setting a DB-level default or trigger on @updatedAt
+
+Prisma's `@updatedAt` manages the column automatically. Adding a DB-level default or trigger conflicts with Prisma's updates.
+
+```sql
+-- ❌ Bad: conflicts with Prisma's @updatedAt management
+ALTER TABLE "User" ALTER COLUMN "updatedAt" SET DEFAULT NOW();
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON "User"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+```
+
+```prisma
+-- ✅ Good: let Prisma manage it exclusively via @updatedAt
+model User {
+  updatedAt DateTime @updatedAt
+}
+```
+
+---
+
 ## Skipping Checks
 
 If you've reviewed the warning and want to proceed anyway, add a disable comment:

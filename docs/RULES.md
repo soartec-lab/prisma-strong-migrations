@@ -1113,6 +1113,200 @@ UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
 
 ---
 
+### enumValueRemoval
+
+**Removing a value from a PostgreSQL ENUM type**
+
+#### Detection Pattern
+
+```sql
+ALTER TYPE "Role" RENAME TO "Role_old";
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER');
+ALTER TABLE "User" ALTER COLUMN "role" TYPE "Role" USING "role"::text::"Role";
+DROP TYPE "Role_old";
+```
+
+#### Why It's Dangerous
+
+- PostgreSQL cannot remove ENUM values directly — Prisma recreates the type with fewer values
+- If existing rows contain the removed value, the `ALTER COLUMN ... TYPE` step will fail
+- If Prisma Client is deployed before the migration, it will throw runtime errors referencing a value that no longer exists in the database
+
+#### Safe Approach
+
+1. Remove all references to the enum value from application code
+2. Deploy the code changes
+3. Backfill existing data: `UPDATE "table" SET "col" = 'OTHER_VALUE' WHERE "col" = 'REMOVED_VALUE'`
+4. Apply this migration
+5. Run `npx prisma generate` and deploy the updated Prisma Client
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line enumValueRemoval
+ALTER TYPE "Role" RENAME TO "Role_old";
+```
+
+---
+
+### implicitM2mTableChange
+
+**Directly modifying a Prisma-managed implicit M2M join table**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "_CategoryToPost" ADD COLUMN "extra" TEXT;
+DROP TABLE "_CategoryToPost";
+CREATE INDEX ON "_CategoryToPost"("A");
+```
+
+#### Why It's Dangerous
+
+- Prisma auto-generates and manages implicit M2M tables (named `_AToB`)
+- Direct modifications bypass Prisma's relation management, causing queries to fail or produce incorrect results
+- The schema becomes out of sync with Prisma's expectations
+
+#### Safe Approach
+
+Convert to an explicit M2M relation in `schema.prisma`:
+
+```prisma
+model CategoriesOnPosts {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  @@id([postId, categoryId])
+}
+```
+
+Then run `npx prisma migrate dev` to let Prisma regenerate the migration.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line implicitM2mTableChange
+ALTER TABLE "_CategoryToPost" ADD COLUMN "extra" TEXT;
+```
+
+---
+
+### intPrimaryKey
+
+**Using SERIAL (32-bit integer) for a primary key**
+
+#### Detection Pattern
+
+```sql
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    ...
+);
+```
+
+#### Why It's Dangerous
+
+- `SERIAL` is a 32-bit integer with a maximum value of ~2.1 billion
+- Large-scale services can exhaust this limit
+- Migrating from `Int` to `BigInt` later requires a full table rewrite and cascading changes to all foreign key columns — making it nearly impossible in production
+
+#### Safe Approach
+
+Use `BigInt` or UUID v7 from the start in `schema.prisma`:
+
+```prisma
+model User {
+  id BigInt @id @default(autoincrement())  // 64-bit, ~9.2 quintillion
+  // or
+  id String @id @default(uuid(7))          // UUID v7, time-sortable
+}
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line intPrimaryKey
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    ...
+);
+```
+
+---
+
+### cuidUuidDefaultRemoval
+
+**Dropping the database-level DEFAULT from an id column**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "User" ALTER COLUMN "id" DROP DEFAULT;
+```
+
+#### Why It's Dangerous
+
+- Prisma generates `cuid()` and `uuid()` values in the application layer
+- If the `id` column relies on a database-level default (e.g. `gen_random_uuid()`), dropping it will break ID generation for any inserts that bypass Prisma Client
+
+#### Safe Approach
+
+If you need to change the ID generation strategy, update `schema.prisma` and let Prisma regenerate the migration:
+
+```prisma
+model User {
+  id String @id @default(uuid(7))
+}
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line cuidUuidDefaultRemoval
+ALTER TABLE "User" ALTER COLUMN "id" DROP DEFAULT;
+```
+
+---
+
+### prismaManagedColumnChange
+
+**Modifying a Prisma-managed column (e.g. @updatedAt) at the database level**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "User" ALTER COLUMN "updatedAt" SET DEFAULT NOW();
+
+CREATE TRIGGER set_updated_at BEFORE UPDATE ON "User"
+  FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+```
+
+#### Why It's Dangerous
+
+- Prisma's `@updatedAt` annotation automatically sets the column value on every update via Prisma Client
+- Adding a DB-level `DEFAULT` or `TRIGGER` for the same column creates a conflict — both Prisma and the database manage the value
+- This can lead to unexpected behavior, duplicate writes, or subtle bugs
+
+#### Safe Approach
+
+Let Prisma manage `@updatedAt` exclusively. Remove the DB-level `DEFAULT` or `TRIGGER` and use the annotation in `schema.prisma`:
+
+```prisma
+model User {
+  updatedAt DateTime @updatedAt
+}
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line prismaManagedColumnChange
+ALTER TABLE "User" ALTER COLUMN "updatedAt" SET DEFAULT NOW();
+```
+
+---
+
 ## Custom Rule Examples
 
 ### require_index_on_uuid
