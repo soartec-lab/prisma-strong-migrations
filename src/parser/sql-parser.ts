@@ -506,7 +506,7 @@ export function parseSql(sql: string): ParsedStatement[] {
     const sqlStatements = ast.flatMap((statement) => {
       if (!statement._location) return [];
       const { raw, line } = getRawTextAndLine(sql, statement._location);
-      const parsed = convertStatement(statement, raw, line);
+      const parsed = convertStatement(statement, raw, line) ?? parseWithRegexFallback(raw, line);
       return parsed ? [applyDisableComment(parsed)] : [];
     });
     return [...disableTransactionStatements, ...sqlStatements];
@@ -529,7 +529,8 @@ export function parseSql(sql: string): ParsedStatement[] {
       try {
         const { ast } = parseWithComments(trimmed + ";", { locationTracking: true });
         if (ast[0]) {
-          const parsed = convertStatement(ast[0], trimmed, line);
+          const parsed =
+            convertStatement(ast[0], trimmed, line) ?? parseWithRegexFallback(trimmed, line);
           return parsed ? [applyDisableComment(parsed)] : [];
         }
       } catch {
