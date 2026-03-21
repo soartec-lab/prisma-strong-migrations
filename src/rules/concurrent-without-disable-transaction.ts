@@ -6,9 +6,7 @@ const detect = (statement: ParsedStatement, context: CheckContext): boolean => {
     (statement.type === "createIndex" || statement.type === "dropIndex") &&
     statement.concurrently === true;
   if (!isConcurrent) return false;
-  const hasDisableTransaction = context.statements.some(
-    (s) => s.type === "disableTransaction",
-  );
+  const hasDisableTransaction = context.statements.some((s) => s.type === "disableTransaction");
   return !hasDisableTransaction;
 };
 

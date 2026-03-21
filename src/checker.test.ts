@@ -137,12 +137,13 @@ ALTER TABLE "users" DROP COLUMN "name";
     expect(results[0].rule.name).toBe("addIndex");
   });
 
-  it("should not flag CREATE INDEX CONCURRENTLY", async () => {
+  it("should not flag CREATE INDEX CONCURRENTLY with disable transaction comment (only disableTransactionWarning)", async () => {
     const results = await check({
-      sql: 'CREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");',
+      sql: '-- prisma-migrate-disable-next-transaction\nCREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");',
       config: baseConfig,
       migrationPath: "migration.sql",
     });
-    expect(results).toEqual([]);
+    expect(results).toHaveLength(1);
+    expect(results[0].rule.name).toBe("disableTransactionWarning");
   });
 });

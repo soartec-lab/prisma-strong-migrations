@@ -305,9 +305,7 @@ CREATE INDEX CONCURRENTLY "idx" ON "orders"("status");`;
 
   describe("VALIDATE CONSTRAINT", () => {
     it("VALIDATE CONSTRAINT → validateConstraint", () => {
-      const results = parseSql(
-        `ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";`,
-      );
+      const results = parseSql(`ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";`);
       expect(results).toHaveLength(1);
       expect(results[0]).toMatchObject({
         type: "validateConstraint",

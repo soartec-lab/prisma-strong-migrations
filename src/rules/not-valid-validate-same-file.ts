@@ -32,8 +32,7 @@ To skip this check, add above the statement:
 export const notValidValidateSameFileRule: Rule = {
   name: "notValidValidateSameFile",
   severity: "error",
-  description:
-    "VALIDATE CONSTRAINT in the same file as NOT VALID negates the lock optimization",
+  description: "VALIDATE CONSTRAINT in the same file as NOT VALID negates the lock optimization",
   detect,
   message,
   suggestion,

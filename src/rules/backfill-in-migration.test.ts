@@ -21,7 +21,7 @@ const makeContext = (statements: ParsedStatement[]): CheckContext => ({
 
 const updateStmt: ParsedStatement = {
   type: "updateStatement",
-  raw: "UPDATE \"users\" SET \"full_name\" = first_name || ' ' || last_name;",
+  raw: 'UPDATE "users" SET "full_name" = first_name || \' \' || last_name;',
   line: 2,
   table: "users",
   hasWhere: false,
