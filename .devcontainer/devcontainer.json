@@ -25,6 +25,9 @@
       }
     }
   },
+  "remoteEnv": {
+    "PATH": "/home/node/.vite-plus/bin:${containerEnv:PATH}"
+  },
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "remoteUser": "node"
 }
