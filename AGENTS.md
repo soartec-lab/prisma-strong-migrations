@@ -341,62 +341,62 @@ To skip this check, add above the statement:
     `.trim();
   },
 
-  // fix は省略（アプリコード変更が前提のため自動修正不可）
+  // fix is omitted (auto-fix not possible since application code changes are required)
 };
 ```
 
-### 6.5. `fix` メソッド（自動修正）
+### 6.5. `fix` Method (Auto-fix)
 
-ルールには省略可能な `fix` メソッドを実装できる。
-`--fix` フラグ実行時に、`fix` が定義されているルールはSQLファイルを自動書き換えする。
+Rules can optionally implement a `fix` method.
+When running with the `--fix` flag, rules that define `fix` will automatically rewrite SQL files.
 
-#### `fix` を実装してよいルールの条件
+#### When to implement `fix`
 
-以下をすべて満たす場合のみ `fix` を実装する:
+Only implement `fix` when all of the following are true:
 
-1. **SQLのみで完結する** — アプリコードの変更や人間の判断が不要
-2. **変換ロジックが一意に決まる** — 元のSQLから機械的に正しいSQLを生成できる
-3. **元のSQLより安全になる** — 生成後のSQLが元より確実に安全（ロック回避・データ保護）
+1. **SQL-only** — No application code changes or human judgment required
+2. **Deterministic transformation** — The correct SQL can be generated mechanically from the original
+3. **Safer than the original** — The generated SQL is definitively safer (avoids locks, protects data)
 
-#### `fix` を実装してはいけないルールの例
+#### Examples where `fix` should NOT be implemented
 
-| パターン                                                                   | 理由                                |
-| -------------------------------------------------------------------------- | ----------------------------------- |
-| アプリコード変更が必要（`removeColumn`, `renameColumn`, `dropTable` 等）   | SQL修正だけでは安全に実行できない   |
-| WHERE句など人間が値を決める必要がある（`updateWithoutWhere` 等）           | 補完すべき情報が不明                |
-| schema.prisma の変更が正解（`intPrimaryKey`, `implicitM2mTableChange` 等） | SQLを書き換えても根本解決にならない |
-| デフォルト値が文脈依存（`addNotNullWithoutDefault` 等）                    | 適切な値が判断できない              |
+| Pattern                                                                              | Reason                                          |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Requires app code changes (`removeColumn`, `renameColumn`, `dropTable`, etc.)        | SQL fix alone is not safe to execute            |
+| Requires human-supplied values (`updateWithoutWhere`, etc.)                          | Missing information cannot be inferred          |
+| Correct solution is a schema.prisma change (`intPrimaryKey`, `implicitM2mTableChange`, etc.) | Rewriting SQL does not solve the root cause |
+| Default value is context-dependent (`addNotNullWithoutDefault`, etc.)               | Appropriate value cannot be determined          |
 
-#### `fix` の実装例（自動修正可能なルール）
+#### Example `fix` implementation (auto-fixable rule)
 
 ```typescript
 import type { FixResult } from "../types";
 
-// addIndex ルールの fix 実装例
+// Example fix implementation for the addIndex rule
 fix: (stmt: ParsedStatement): FixResult => {
-  // CONCURRENTLY を追加した SQL を生成
+  // Generate SQL with CONCURRENTLY added
   const fixed = stmt.raw.replace(/CREATE INDEX/, "CREATE INDEX CONCURRENTLY");
   return {
     statements: [fixed],
     requiresDisableTransaction: true,
-    note: "CONCURRENTLYはトランザクション内では実行できません。ファイル先頭にdisable-transactionヘッダを追加しました。",
+    note: "CONCURRENTLY cannot run inside a transaction. A disable-transaction header has been added at the top of the file.",
   };
 },
 ```
 
-#### 自動修正可能な既存ルール一覧
+#### Rules with auto-fix support
 
-| ルール                | 修正内容                                                                               |
-| --------------------- | -------------------------------------------------------------------------------------- |
-| `addIndex`            | `CREATE INDEX` → `CREATE INDEX CONCURRENTLY` + disable-transactionヘッダ               |
-| `removeIndex`         | `DROP INDEX` → `DROP INDEX CONCURRENTLY` + disable-transactionヘッダ                   |
-| `addForeignKey`       | `NOT VALID` 追加 + `VALIDATE CONSTRAINT` 文を後続に追加                                |
-| `addCheckConstraint`  | `NOT VALID` 追加 + `VALIDATE CONSTRAINT` 文を後続に追加                                |
-| `setNotNull`          | CHECK NOT VALID → VALIDATE → SET NOT NULL → DROP CONSTRAINT の4文に展開                |
-| `addUniqueConstraint` | `CREATE UNIQUE INDEX CONCURRENTLY` + `ADD CONSTRAINT USING INDEX` の2文に置換 + ヘッダ |
-| `addJsonColumn`       | raw SQL内の `json` を `jsonb` に置換                                                   |
+| Rule                  | Fix behavior                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------- |
+| `addIndex`            | `CREATE INDEX` → `CREATE INDEX CONCURRENTLY` + disable-transaction header                      |
+| `removeIndex`         | `DROP INDEX` → `DROP INDEX CONCURRENTLY` + disable-transaction header                          |
+| `addForeignKey`       | Add `NOT VALID` + append `VALIDATE CONSTRAINT` statement                                        |
+| `addCheckConstraint`  | Add `NOT VALID` + append `VALIDATE CONSTRAINT` statement                                        |
+| `setNotNull`          | Expand into 4 statements: CHECK NOT VALID → VALIDATE → SET NOT NULL → DROP CONSTRAINT          |
+| `addUniqueConstraint` | Replace with `CREATE UNIQUE INDEX CONCURRENTLY` + `ADD CONSTRAINT USING INDEX` + header        |
+| `addJsonColumn`       | Replace `json` with `jsonb` in the raw SQL                                                      |
 
-詳細は `.local-dev-docs/active/auto-fix-sql-proposal.md` を参照。
+See `.local-dev-docs/active/auto-fix-sql-proposal.md` for details.
 
 ### 7. Warning Skip Implementation
 
