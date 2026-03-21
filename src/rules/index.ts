@@ -32,6 +32,7 @@ import { updateWithoutWhereRule } from "./update-without-where";
 import { deleteWithoutWhereRule } from "./delete-without-where";
 import { backfillInMigrationRule } from "./backfill-in-migration";
 import { enumValueRemovalRule } from "./enum-value-removal";
+import { implicitM2mTableChangeRule } from "./implicit-m2m-table-change";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -66,6 +67,7 @@ export const builtinRules: Rule[] = [
   deleteWithoutWhereRule,
   backfillInMigrationRule,
   enumValueRemovalRule,
+  implicitM2mTableChangeRule,
   indexColumnsCountRule,
 ];
 
