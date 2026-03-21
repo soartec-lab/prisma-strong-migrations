@@ -21,8 +21,6 @@ export function registerDevCommand(migrate: Command): void {
       }
       const migrationsDir = resolve(config.migrationsDir ?? "./prisma/migrations");
 
-      const existingFiles = new Set(await findMigrationFiles(migrationsDir));
-
       const createOnlyArgs = ["migrate", "dev", "--create-only"];
       if (options.name) createOnlyArgs.push("--name", options.name);
       if (options.schema) createOnlyArgs.push("--schema", options.schema);
@@ -30,16 +28,7 @@ export function registerDevCommand(migrate: Command): void {
       const createStatus = runPrisma([...createOnlyArgs, ...cmd.args]);
       if (createStatus !== 0) process.exit(createStatus);
 
-      const newFiles = (await findMigrationFiles(migrationsDir)).filter(
-        (f) => !existingFiles.has(f),
-      );
-
-      if (newFiles.length === 0) {
-        console.log("No new migrations created.");
-        process.exit(0);
-      }
-
-      const hasErrors = await runCheckAndReport(migrationsDir, config, newFiles);
+      const hasErrors = await runCheckAndReport(migrationsDir, config);
 
       if (hasErrors) {
         console.error(
