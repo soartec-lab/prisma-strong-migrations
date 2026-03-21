@@ -151,13 +151,23 @@ CREATE INDEX "users_email_idx" ON "users"("email");
 CREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");
 ```
 
-**Note**: `CONCURRENTLY` cannot be executed within a transaction. In Prisma, you need to split this migration into a separate file and edit it manually.
+**Note**: `CONCURRENTLY` cannot be executed within a transaction. Prisma wraps migrations in transactions by default, so you must disable the transaction for this migration file.
 
 #### Prisma Workflow
 
-1. Generate migration with `--create-only`
-2. Manually edit the generated SQL to add `CONCURRENTLY`
-3. Apply the migration
+1. Generate migration with `--create-only`:
+   ```bash
+   npx prisma migrate dev --create-only --name add_your_index_name
+   ```
+2. Edit the generated migration file:
+   - Add `-- prisma-migrate-disable-next-transaction` as the **first line**
+   - Add `CONCURRENTLY` to the `CREATE INDEX` statement
+3. Apply the migration:
+   ```bash
+   npx prisma migrate dev
+   ```
+
+**Warning**: `-- prisma-migrate-disable-next-transaction` disables transaction protection for the **entire file**. Keep this migration file minimal — ideally one statement only.
 
 ---
 
@@ -520,6 +530,112 @@ CREATE TABLE "users" (...);
 
 - Explicitly execute `DROP TABLE` with full understanding of the impact
 - Or only create table if it doesn't exist
+
+---
+
+### drop_table
+
+**Dropping a table**
+
+#### Detection Pattern
+
+```sql
+DROP TABLE "users";
+```
+
+#### Why It's Dangerous
+
+- Prisma generates `DROP TABLE` when a model is removed from `schema.prisma`
+- All data is permanently lost
+- Other tables referencing this table via foreign keys may break
+
+#### Safe Approach
+
+1. Remove all references to the model from application code
+2. Run `npx prisma generate` to update Prisma Client
+3. Deploy the application code changes
+4. Then apply this migration
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line drop_table
+DROP TABLE "users";
+```
+
+---
+
+### disable_transaction_warning
+
+**Migration running without transaction protection**
+
+#### Detection Pattern
+
+```sql
+-- prisma-migrate-disable-next-transaction
+```
+
+#### Why It's Dangerous
+
+- `-- prisma-migrate-disable-next-transaction` disables the transaction wrapper for the **entire migration file**
+- If any statement in the file fails, the database may be left in a partial state with no automatic rollback
+
+#### Safe Approach
+
+Keep the migration file minimal — ideally **one statement only** — when using this comment.
+
+```sql
+-- prisma-migrate-disable-next-transaction
+
+CREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line disable_transaction_warning
+-- prisma-migrate-disable-next-transaction
+```
+
+---
+
+### add_not_null_without_default
+
+**Adding a NOT NULL column without a default value**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "users" ADD COLUMN "status" text NOT NULL;
+```
+
+#### Why It's Dangerous
+
+- Prisma generates this SQL when a required field (no `?`) without `@default` is added to a model
+- PostgreSQL rejects this statement if the table already has existing rows
+
+#### Safe Approach
+
+**Migration 1**: Add column with a temporary default value
+
+```sql
+ALTER TABLE "users" ADD COLUMN "status" text NOT NULL DEFAULT 'active';
+```
+
+**Migration 2**: Remove the default if it was only needed for backfill
+
+```sql
+ALTER TABLE "users" ALTER COLUMN "status" DROP DEFAULT;
+```
+
+Alternatively, add `@default(...)` to the Prisma schema before generating the migration, then remove it after deploying.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line add_not_null_without_default
+ALTER TABLE "users" ADD COLUMN "status" text NOT NULL;
+```
 
 ---
 
