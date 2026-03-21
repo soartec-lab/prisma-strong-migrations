@@ -5,6 +5,8 @@ export type StatementType =
   | "createTable"
   | "dropTable"
   | "alterSchema"
+  | "alterType"
+  | "createTrigger"
   | "disableTransaction"
   | "truncateTable"
   | "setTablespace"
@@ -24,6 +26,7 @@ export type AlterAction =
   | "alterColumnType"
   | "alterColumnSetNotNull"
   | "alterColumnSetDefault"
+  | "dropColumnDefault"
   | "addConstraint"
   | "renameTable";
 
@@ -49,4 +52,6 @@ export interface ParsedStatement {
   disabled?: string[];
   disableReason?: string;
   hasWhere?: boolean;
+  typeName?: string;
+  hasSerialId?: boolean;
 }

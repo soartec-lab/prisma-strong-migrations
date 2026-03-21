@@ -408,6 +408,61 @@ function matchUpdateStatement(sql: string, line: number): ParsedStatement | null
   };
 }
 
+function matchAlterTypeRename(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*ALTER\s+TYPE\b/i.test(sql)) return null;
+  if (!/\bRENAME\s+TO\b/i.test(sql)) return null;
+  const toMatch = sql.match(/RENAME\s+TO\s+(?:"([^"]+)"|(\S+))/i);
+  const renameTo = toMatch ? (toMatch[1] ?? toMatch[2] ?? "") : "";
+  if (!renameTo.endsWith("_old")) return null;
+  const typeMatch = sql.match(/ALTER\s+TYPE\s+(?:"([^"]+)"|(\S+))/i);
+  return {
+    type: "alterType",
+    raw: sql,
+    line,
+    typeName: typeMatch ? (typeMatch[1] ?? typeMatch[2]) : undefined,
+  };
+}
+
+function matchCreateTable(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*CREATE\s+TABLE\b/i.test(sql)) return null;
+  if (/\bAS\s+SELECT\b/i.test(sql)) return null;
+  const tableMatch = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"([^"]+)"|(\S+))/i);
+  const hasSerialId = /["']?id["']?\s+SERIAL\b/i.test(sql);
+  return {
+    type: "createTable",
+    raw: sql,
+    line,
+    table: tableMatch ? (tableMatch[1] ?? tableMatch[2]) : undefined,
+    hasSerialId,
+  };
+}
+
+function matchDropColumnDefault(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*ALTER\s+TABLE\b/i.test(sql)) return null;
+  if (!/\bDROP\s+DEFAULT\b/i.test(sql)) return null;
+  const tableMatch = sql.match(ALTER_TABLE_PATTERN);
+  const columnMatch = sql.match(/ALTER\s+COLUMN\s+(?:"([^"]+)"|(\S+))/i);
+  return {
+    type: "alterTable",
+    raw: sql,
+    line,
+    table: tableMatch ? extractIdentifier(tableMatch) : undefined,
+    action: "dropColumnDefault",
+    column: columnMatch ? (columnMatch[1] ?? columnMatch[2]) : undefined,
+  };
+}
+
+function matchCreateTrigger(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*CREATE\s+(?:OR\s+REPLACE\s+)?TRIGGER\b/i.test(sql)) return null;
+  const tableMatch = sql.match(/\bON\s+(?:"([^"]+)"|(\S+))/i);
+  return {
+    type: "createTrigger",
+    raw: sql,
+    line,
+    table: tableMatch ? (tableMatch[1] ?? tableMatch[2]) : undefined,
+  };
+}
+
 function matchDeleteStatement(sql: string, line: number): ParsedStatement | null {
   if (!/^\s*DELETE\s+FROM\b/i.test(sql)) return null;
   const hasWhere = /\bWHERE\b/i.test(sql);
@@ -424,13 +479,17 @@ function matchDeleteStatement(sql: string, line: number): ParsedStatement | null
 function parseWithRegexFallback(sql: string, line: number): ParsedStatement | null {
   return (
     matchAlterSchemaRename(sql, line) ??
+    matchAlterTypeRename(sql, line) ??
     matchAddConstraintNotValid(sql, line) ??
     matchAddExcludeConstraint(sql, line) ??
     matchTruncateTable(sql, line) ??
     matchSetTablespace(sql, line) ??
     matchClusterTable(sql, line) ??
     matchDisableTrigger(sql, line) ??
+    matchDropColumnDefault(sql, line) ??
     matchCreateTableAsSelect(sql, line) ??
+    matchCreateTable(sql, line) ??
+    matchCreateTrigger(sql, line) ??
     matchVacuum(sql, line) ??
     matchValidateConstraint(sql, line) ??
     matchUpdateStatement(sql, line) ??
