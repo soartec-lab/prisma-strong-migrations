@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { rm } from "node:fs/promises";
+import { rmSync } from "node:fs";
 import { dirname } from "node:path";
 import { resolve } from "node:path";
 import { loadConfig } from "../../../config/loader";
@@ -36,17 +36,31 @@ export function registerDevCommand(migrate: Command): void {
         (f) => !existingFiles.has(f),
       );
 
+      // Treat newly generated files as temporary: register a cleanup handler that
+      // deletes them on process exit. If the check passes, we remove the handler
+      // so the files are kept.
+      const cleanup = () => {
+        for (const file of newFiles) {
+          rmSync(dirname(file), { recursive: true, force: true });
+        }
+      };
+      process.on("exit", cleanup);
+      process.on("SIGINT", () => { cleanup(); process.exit(130); });
+      process.on("SIGTERM", () => { cleanup(); process.exit(143); });
+
       const hasErrors = await runCheckAndReport(migrationsDir, config);
 
       if (hasErrors) {
-        for (const file of newFiles) {
-          await rm(dirname(file), { recursive: true, force: true });
-        }
         console.error(
           "\n❌ Migration check failed. The generated migration files have been deleted. Fix the issues and try again.",
         );
         process.exit(1);
       }
+
+      // Check passed — unregister cleanup so the files are kept
+      process.off("exit", cleanup);
+      process.off("SIGINT", cleanup);
+      process.off("SIGTERM", cleanup);
 
       const applyArgs = ["migrate", "dev"];
       if (options.schema) applyArgs.push("--schema", options.schema);
