@@ -648,6 +648,110 @@ ALTER TABLE "users" ALTER COLUMN "status" DROP DEFAULT;
 
 ---
 
+### Truncating a table
+
+#### Bad
+
+`TRUNCATE` acquires an `AccessExclusiveLock` and deletes all rows. Locks propagate to foreign-key-referencing tables, and accidental execution in production is catastrophic.
+
+```sql
+TRUNCATE TABLE "users";
+```
+
+#### Good
+
+Delete rows in application code where scope is controlled:
+
+```typescript
+await prisma.users.deleteMany({});
+```
+
+---
+
+### Disabling triggers
+
+#### Bad
+
+`DISABLE TRIGGER` turns off foreign key and other constraint triggers, which can silently corrupt data integrity. If the migration fails after disabling, triggers remain off.
+
+```sql
+ALTER TABLE "users" DISABLE TRIGGER ALL;
+```
+
+#### Good
+
+Do not disable triggers in migrations. If unavoidable, always re-enable before the migration ends.
+
+---
+
+### Running VACUUM inside a migration
+
+#### Bad
+
+`VACUUM` cannot execute inside a transaction block. Prisma wraps migrations in `BEGIN/COMMIT`, so this always fails and marks the migration as broken.
+
+```sql
+VACUUM ANALYZE "users";
+```
+
+#### Good
+
+Run VACUUM as a separate maintenance task outside migrations:
+
+```bash
+psql -c "VACUUM ANALYZE \"users\";"
+```
+
+---
+
+### Moving a table to another tablespace
+
+#### Bad
+
+`SET TABLESPACE` physically relocates the table, holding an `AccessExclusiveLock` for the entire duration. On large tables this can block production for minutes.
+
+```sql
+ALTER TABLE "users" SET TABLESPACE pg_default;
+```
+
+#### Good
+
+Run this operation in a scheduled maintenance window, not in a regular migration.
+
+---
+
+### Clustering a table
+
+#### Bad
+
+`CLUSTER` physically rewrites the table in index order, holding an `AccessExclusiveLock` throughout. On large tables this blocks all reads and writes for a long time.
+
+```sql
+CLUSTER "users" USING "users_pkey";
+```
+
+#### Good
+
+Use **pg_repack** to reorder rows without an exclusive lock, or run `CLUSTER` during a low-traffic maintenance window.
+
+---
+
+### Creating a table from a SELECT query
+
+#### Bad
+
+`CREATE TABLE AS SELECT` copies all rows inside the migration. On large tables this takes a long time and can cause timeouts.
+
+```sql
+CREATE TABLE "users_backup" AS SELECT * FROM "users";
+```
+
+#### Good
+
+Run data copies outside migrations using `pg_dump` or a separate backfill job.
+
+---
+
 ### Keeping non-unique indexes to three columns or less
 
 #### Bad

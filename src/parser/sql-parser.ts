@@ -357,7 +357,9 @@ function matchDisableTrigger(sql: string, line: number): ParsedStatement | null 
 function matchCreateTableAsSelect(sql: string, line: number): ParsedStatement | null {
   if (!/^\s*CREATE\s+TABLE\b/i.test(sql)) return null;
   if (!/\bAS\s+SELECT\b/i.test(sql)) return null;
-  const match = sql.match(new RegExp(`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?${IDENT_PATTERN}`, "i"));
+  const match = sql.match(
+    new RegExp(`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?${IDENT_PATTERN}`, "i"),
+  );
   return {
     type: "createTableAsSelect",
     raw: sql,
@@ -368,7 +370,9 @@ function matchCreateTableAsSelect(sql: string, line: number): ParsedStatement | 
 
 function matchVacuum(sql: string, line: number): ParsedStatement | null {
   if (!/^\s*VACUUM\b/i.test(sql)) return null;
-  const match = sql.match(new RegExp(`VACUUM\\s+(?:FULL\\s+)?(?:FREEZE\\s+)?(?:ANALYZE\\s+)?${IDENT_PATTERN}`, "i"));
+  const match = sql.match(
+    new RegExp(`VACUUM\\s+(?:FULL\\s+)?(?:FREEZE\\s+)?(?:ANALYZE\\s+)?${IDENT_PATTERN}`, "i"),
+  );
   return {
     type: "vacuum",
     raw: sql,

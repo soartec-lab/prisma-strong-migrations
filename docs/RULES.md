@@ -639,6 +639,113 @@ ALTER TABLE "users" ADD COLUMN "status" text NOT NULL;
 
 ---
 
+### SM018: truncateTable
+
+**TRUNCATE deletes all rows with an AccessExclusiveLock**
+
+#### Detection Pattern
+
+```sql
+TRUNCATE TABLE "users";
+TRUNCATE "users";
+```
+
+#### Why It's Dangerous
+
+- Acquires an `AccessExclusiveLock`, blocking all reads and writes for the duration
+- Propagates locks to tables referenced by foreign keys
+- Permanently deletes all rows — fatal if run in production by mistake
+
+#### Safe Approach
+
+Delete rows in application code where the scope can be controlled:
+
+```typescript
+await prisma.users.deleteMany({});
+```
+
+Or limit TRUNCATE to development/staging environments only.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line truncateTable
+TRUNCATE TABLE "users";
+```
+
+---
+
+### SM021: disableTrigger
+
+**DISABLE TRIGGER bypasses constraint checks and may corrupt data integrity**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "users" DISABLE TRIGGER ALL;
+ALTER TABLE "users" DISABLE TRIGGER "audit_trigger";
+```
+
+#### Why It's Dangerous
+
+- Disables triggers including those enforcing foreign key constraints
+- Data inserted or updated while triggers are disabled may violate referential integrity
+- If the migration fails after DISABLE and before ENABLE, triggers remain off permanently
+
+#### Safe Approach
+
+Do not disable triggers in migrations. If unavoidable, ensure `ENABLE TRIGGER` is called before the migration ends:
+
+```sql
+ALTER TABLE "users" DISABLE TRIGGER ALL;
+-- ... data operations ...
+ALTER TABLE "users" ENABLE TRIGGER ALL;
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line disableTrigger
+ALTER TABLE "users" DISABLE TRIGGER ALL;
+```
+
+---
+
+### SM023: vacuumInMigration
+
+**VACUUM cannot run inside a transaction**
+
+#### Detection Pattern
+
+```sql
+VACUUM ANALYZE "users";
+VACUUM "users";
+VACUUM;
+```
+
+#### Why It's Dangerous
+
+- PostgreSQL does not allow `VACUUM` inside a transaction block
+- Prisma wraps every migration in `BEGIN/COMMIT`, so this statement will always fail with an error
+- The migration will be marked as failed and require manual intervention
+
+#### Safe Approach
+
+Run VACUUM as a separate maintenance task outside migrations:
+
+```bash
+psql -c "VACUUM ANALYZE \"users\";"
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line vacuumInMigration
+VACUUM ANALYZE "users";
+```
+
+---
+
 ## Best Practices (Warning)
 
 ### SM101: indexColumnsCount
@@ -662,6 +769,104 @@ CREATE INDEX "users_multi_idx" ON "users"("a", "b", "c", "d");
 - Start with the most selective columns
 - Limit to 2-3 columns
 - Analyze query patterns to determine necessary indexes
+
+---
+
+### SM019: setTablespace
+
+**SET TABLESPACE physically moves the table with an AccessExclusiveLock**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "users" SET TABLESPACE pg_default;
+```
+
+#### Why It's a Warning
+
+- Physically relocates the table to another storage area, rewriting all data
+- Holds an `AccessExclusiveLock` for the entire duration of the move
+- On large tables, this can block production traffic for minutes or hours
+
+#### Safe Approach
+
+Run this operation during a scheduled low-traffic maintenance window, not as part of a regular migration.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line setTablespace
+ALTER TABLE "users" SET TABLESPACE pg_default;
+```
+
+---
+
+### SM020: clusterTable
+
+**CLUSTER physically rewrites the table with an AccessExclusiveLock**
+
+#### Detection Pattern
+
+```sql
+CLUSTER "users" USING "users_pkey";
+CLUSTER "users";
+```
+
+#### Why It's a Warning
+
+- Physically rewrites the table in index order, holding an `AccessExclusiveLock` throughout
+- On large tables, this blocks all reads and writes for a long time
+- The clustering benefit degrades over time as new rows are inserted
+
+#### Safe Approach
+
+Consider alternatives that avoid a full table lock:
+
+- **pg_repack**: reorders rows without holding an exclusive lock
+- **VACUUM**: reclaims dead tuples with a lighter lock
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line clusterTable
+CLUSTER "users" USING "users_pkey";
+```
+
+---
+
+### SM022: createTableAsSelect
+
+**CREATE TABLE AS SELECT may take a long time on large tables**
+
+#### Detection Pattern
+
+```sql
+CREATE TABLE "users_backup" AS SELECT * FROM "users";
+```
+
+#### Why It's a Warning
+
+- Copies all rows from the source table, which can be very slow on large tables
+- Holds locks on the source table during the copy
+- Running a long data copy inside a migration risks timeout and partial failures
+
+#### Safe Approach
+
+Run backups outside the migration:
+
+```bash
+# Use pg_dump for point-in-time backups
+pg_dump -t users mydb > users_backup.sql
+```
+
+If a copy is necessary, create the table structure first, then backfill outside the migration.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line createTableAsSelect
+CREATE TABLE "users_backup" AS SELECT * FROM "users";
+```
 
 ---
 
