@@ -79,5 +79,3 @@ export const builtinRules: Rule[] = [
   indexColumnsCountRule,
 ];
 
-export { loadCustomRules } from "./loader";
-export type { Rule, CheckContext, CheckResult, Severity } from "./types";

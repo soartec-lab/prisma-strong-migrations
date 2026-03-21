@@ -1,8 +1,6 @@
 import type { CheckResult } from "../rules/types";
 import type { JsonReport, ReportItem } from "./types";
 
-export type { JsonReport, ReportItem };
-
 export const jsonReport = (results: CheckResult[]): JsonReport => {
   const toItem = (result: CheckResult): ReportItem => ({
     ruleName: result.rule.name,

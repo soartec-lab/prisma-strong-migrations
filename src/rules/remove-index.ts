@@ -1,4 +1,4 @@
-import type { ParsedStatement } from "../../parser/types";
+import type { ParsedStatement } from "../parser/types";
 import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {

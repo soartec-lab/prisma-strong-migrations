@@ -1,4 +1,4 @@
-import type { ParsedStatement } from "../../parser/types";
+import type { ParsedStatement } from "../parser/types";
 import type { CheckContext, Rule } from "./types";
 
 const SERIAL_TYPES = ["serial", "bigserial", "smallserial"];
