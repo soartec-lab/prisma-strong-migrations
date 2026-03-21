@@ -13,7 +13,6 @@ generator client {
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
-  name      String
   createdAt DateTime  @default(now()) @map("created_at")
   posts     Post[]
   comments  Comment[]
@@ -30,6 +29,7 @@ model Post {
   user        User      @relation(fields: [userId], references: [id])
   comments    Comment[]
 
+  @@index([userId])
   @@map("posts")
 }
 
