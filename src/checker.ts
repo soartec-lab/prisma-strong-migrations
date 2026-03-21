@@ -11,7 +11,7 @@ export interface CheckOptions {
 
 export async function check(options: CheckOptions): Promise<CheckResult[]> {
   const { sql, config, migrationPath } = options;
-  const statements = parseSql(sql);
+  const statements = parseSql(sql).map((s) => ({ ...s, migrationPath }));
   const disabledRules = config.disabledRules ?? [];
   const customRules = config.customRules ?? [];
   const allRules = [...builtinRules, ...customRules];

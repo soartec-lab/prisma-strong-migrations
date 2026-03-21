@@ -36,6 +36,7 @@ export interface ParsedStatement {
   type: StatementType;
   raw: string;
   line: number;
+  migrationPath?: string;
   table?: string;
   action?: AlterAction;
   column?: string;
