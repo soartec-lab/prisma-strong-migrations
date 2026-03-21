@@ -62,7 +62,7 @@ async function updatePackageJsonScripts(): Promise<void> {
   let modified = false;
 
   for (const [key, value] of devTargets) {
-    const newValue = value.replace(/prisma migrate dev/g, "psm migrate dev");
+    const newValue = value.replace(/prisma migrate dev/g, "prisma-strong-migrations migrate dev");
     console.log(`\n  "${key}": "${value}"`);
     console.log(`  → "${key}": "${newValue}"`);
     const answer = await prompt("  Replace? (Y/n) ");
@@ -73,7 +73,10 @@ async function updatePackageJsonScripts(): Promise<void> {
   }
 
   for (const [key, value] of deployTargets) {
-    const newValue = value.replace(/prisma migrate deploy/g, "psm migrate deploy");
+    const newValue = value.replace(
+      /prisma migrate deploy/g,
+      "prisma-strong-migrations migrate deploy",
+    );
     console.log(`\n  "${key}": "${value}"`);
     console.log(`  → "${key}": "${newValue}"`);
     const answer = await prompt("  Replace? (Y/n) ");
