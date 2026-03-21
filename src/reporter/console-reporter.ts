@@ -7,24 +7,29 @@ export const consoleReport = (results: CheckResult[]): void => {
     return;
   }
 
-  for (const result of results) {
-    const { rule, statement, message, suggestion } = result;
-    const severity = rule.severity === "error" ? chalk.red("error") : chalk.yellow("warning");
-    const location = `${statement.migrationPath} line ${statement.line}`;
+  const byFile = Map.groupBy(results, (r) => r.statement.migrationPath ?? "unknown");
 
+  for (const [filePath, fileResults] of byFile) {
     console.log();
-    console.log(`${severity} [${chalk.bold(rule.name)}] ${chalk.dim(location)}`);
-    console.log(`  ${chalk.white(message)}`);
-    console.log();
-    console.log(
-      chalk.dim(
-        suggestion
-          .split("\n")
-          .map((l) => `  ${l}`)
-          .join("\n"),
-      ),
-    );
-    console.log(chalk.dim("─".repeat(60)));
+    console.log(chalk.cyan.bold(filePath));
+
+    for (const { rule, statement, message, suggestion } of fileResults) {
+      const severity = rule.severity === "error" ? chalk.red("error") : chalk.yellow("warning");
+
+      console.log();
+      console.log(`${severity} [${chalk.bold(rule.name)}] ${chalk.dim(`line ${statement.line}`)}`);
+      console.log(`  ${chalk.white(message)}`);
+      console.log();
+      console.log(
+        chalk.dim(
+          suggestion
+            .split("\n")
+            .map((l) => `  ${l}`)
+            .join("\n"),
+        ),
+      );
+      console.log(chalk.dim("─".repeat(60)));
+    }
   }
 
   const errors = results.filter((r) => r.rule.severity === "error").length;
