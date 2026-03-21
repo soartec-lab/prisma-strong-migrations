@@ -631,7 +631,7 @@ export function parseSql(sql: string): ParsedStatement[] {
       const firstTokenOffset = offset + text.search(/\S/);
       const line = lineNumberAt(firstTokenOffset, sql);
 
-        // Strip block comments before AST/regex parsing — pgsql-ast-parser chokes on
+      // Strip block comments before AST/regex parsing — pgsql-ast-parser chokes on
       // characters like backticks that Prisma puts inside /* Warnings: ... */ blocks.
       const stripped = trimmed.replace(/\/\*[\s\S]*?\*\//g, "").trim();
       if (!stripped) return [];
