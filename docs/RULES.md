@@ -870,6 +870,249 @@ CREATE TABLE "users_backup" AS SELECT * FROM "users";
 
 ---
 
+## Prisma-Specific Rules
+
+The following rules detect issues specific to how Prisma wraps migrations in transactions and how concurrent index operations interact with Prisma's migration runner.
+
+---
+
+### concurrentWithoutDisableTransaction
+
+**CREATE/DROP INDEX CONCURRENTLY requires disabling the transaction**
+
+#### Detection Pattern
+
+```sql
+CREATE INDEX CONCURRENTLY "idx_users_email" ON "users"("email");
+DROP INDEX CONCURRENTLY "idx_users_email";
+```
+
+#### Why It's Dangerous
+
+- Prisma wraps every migration file in a transaction by default
+- PostgreSQL does not allow `CONCURRENTLY` operations inside a transaction block
+- The migration will fail at runtime with: `ERROR: CREATE INDEX CONCURRENTLY cannot run inside a transaction block`
+
+#### Safe Approach
+
+Add `-- prisma-migrate-disable-next-transaction` as the first line of the migration file:
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "idx_users_email" ON "users"("email");
+```
+
+Keep the file to one statement only — disabling the transaction removes rollback protection.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line concurrentWithoutDisableTransaction
+CREATE INDEX CONCURRENTLY "idx_users_email" ON "users"("email");
+```
+
+---
+
+### notValidValidateSameFile
+
+**VALIDATE CONSTRAINT in the same file as NOT VALID negates the lock optimization**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey"
+  FOREIGN KEY ("user_id") REFERENCES "users"("id") NOT VALID;
+ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";
+```
+
+#### Why It's Dangerous
+
+- The purpose of `NOT VALID` is to defer the full table scan (and heavy lock) to a later `VALIDATE CONSTRAINT` step
+- When both are in the same migration file, they run in the same transaction — the optimization is completely lost
+- The full table scan and `ShareRowExclusiveLock` still occur together, blocking reads and writes
+
+#### Safe Approach
+
+Split into two separate migration files:
+
+```sql
+-- migration_1.sql
+ALTER TABLE "orders" ADD CONSTRAINT "orders_user_id_fkey"
+  FOREIGN KEY ("user_id") REFERENCES "users"("id") NOT VALID;
+
+-- migration_2.sql (run after deploying migration_1)
+ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";
+```
+
+`VALIDATE CONSTRAINT` run separately uses a `ShareUpdateExclusiveLock` that allows concurrent reads and writes.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line notValidValidateSameFile
+ALTER TABLE "orders" VALIDATE CONSTRAINT "orders_user_id_fkey";
+```
+
+---
+
+### mixedStatementsWithDisabledTransaction
+
+**Multiple statements in a migration with disabled transaction have no rollback protection**
+
+#### Detection Pattern
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "idx_a" ON "users"("email");
+ALTER TABLE "users" ADD COLUMN "name" text;
+```
+
+#### Why It's Dangerous
+
+- When `-- prisma-migrate-disable-next-transaction` is present, the entire file runs without a transaction
+- If any statement fails partway through, all previous statements in the file are already committed and cannot be rolled back
+- This can leave the database in a partial state
+
+#### Safe Approach
+
+Keep files with `-- prisma-migrate-disable-next-transaction` to one SQL statement only:
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "idx_a" ON "users"("email");
+```
+
+Move other DDL statements to a separate migration file.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line mixedStatementsWithDisabledTransaction
+-- prisma-migrate-disable-next-transaction
+```
+
+---
+
+### updateWithoutWhere
+
+**UPDATE without WHERE clause will affect all rows**
+
+#### Detection Pattern
+
+```sql
+UPDATE "users" SET "status" = 'active';
+```
+
+#### Why It's a Warning
+
+- Updating every row in a large table takes a long time and holds row locks throughout
+- In production, this can cause lock contention and timeouts for concurrent writes
+- Often a mistake — most backfills are intended for a subset of rows
+
+#### Safe Approach
+
+Add a WHERE clause to limit the affected rows:
+
+```sql
+UPDATE "users" SET "status" = 'active' WHERE "status" IS NULL;
+```
+
+If intentionally updating all rows, make it explicit:
+
+```sql
+UPDATE "users" SET "status" = 'active' WHERE 1=1; -- intentional full update
+```
+
+For large tables, consider doing the backfill in batches from application code instead.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line updateWithoutWhere
+UPDATE "users" SET "status" = 'active';
+```
+
+---
+
+### deleteWithoutWhere
+
+**DELETE FROM without WHERE clause will delete all rows**
+
+#### Detection Pattern
+
+```sql
+DELETE FROM "sessions";
+```
+
+#### Why It's a Warning
+
+- Deleting every row in a large table takes a long time and holds locks throughout
+- Often a mistake — most cleanup operations are intended for a subset of rows
+- Unlike `TRUNCATE`, `DELETE` is fully logged and slower on large tables
+
+#### Safe Approach
+
+Add a WHERE clause to limit the deleted rows:
+
+```sql
+DELETE FROM "sessions" WHERE "expires_at" < NOW();
+```
+
+If intentionally deleting all rows, consider `TRUNCATE TABLE` (with its own risks) or:
+
+```sql
+DELETE FROM "sessions" WHERE 1=1; -- intentional full delete
+```
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line deleteWithoutWhere
+DELETE FROM "sessions";
+```
+
+---
+
+### backfillInMigration
+
+**UPDATE mixed with schema changes should be in a separate migration**
+
+#### Detection Pattern
+
+```sql
+ALTER TABLE "users" ADD COLUMN "full_name" text;
+UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
+```
+
+#### Why It's Dangerous
+
+- Mixing `ALTER TABLE` schema changes and `UPDATE` backfills in the same migration can cause long-running locks on large tables
+- The `ALTER TABLE` acquires an `AccessExclusiveLock` and the subsequent `UPDATE` holds row locks — both in the same transaction
+- The combination blocks all reads and writes for the duration of the backfill
+
+#### Safe Approach
+
+Split into two separate migration files:
+
+```sql
+-- migration_1.sql: schema change only
+ALTER TABLE "users" ADD COLUMN "full_name" text;
+
+-- migration_2.sql: backfill only (run after deploying migration_1)
+UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
+```
+
+For large tables, do the backfill in batches from application code after the column is added.
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line backfillInMigration
+UPDATE "users" SET "full_name" = first_name || ' ' || last_name;
+```
+
+---
+
 ## Custom Rule Examples
 
 ### require_index_on_uuid
