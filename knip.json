@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "project": ["src/**/*.ts", "integration-tests/**/*.ts"],
+  "ignore": ["src/**/*.test.ts", "integration-tests/**/*.ts"],
+  "ignoreDependencies": ["@typescript/native-preview", "@voidzero-dev/vite-plus-core"]
+}
