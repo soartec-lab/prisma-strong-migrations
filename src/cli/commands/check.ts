@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { check } from "../../checker";
+import { applyFixes, writeFixedSql } from "../../fixer";
 import { consoleReport } from "../../reporter/console-reporter";
 import { jsonReport } from "../../reporter/json-reporter";
 import { loadConfig } from "../../config/loader";
@@ -15,6 +16,7 @@ export function registerCheckCommand(program: Command): void {
     .option("-f, --format <format>", "output format: console | json", "console")
     .option("-c, --config <path>", "path to config file")
     .option("--no-fail", "exit with code 0 even if errors found")
+    .option("--fix", "automatically fix issues where possible")
     .action(async (migration: string | undefined, options) => {
       const config = await loadConfig(options.config);
       if (config.customRulesDir) {
@@ -30,7 +32,16 @@ export function registerCheckCommand(program: Command): void {
         const migrationPath = resolve(migration);
         const sql = await readFile(migrationPath, "utf-8");
         const results = await check({ sql, config, migrationPath });
-        allResults.push(...results);
+        if (options.fix && results.length > 0) {
+          const { sql: fixedSql, appliedCount, skippedResults } = applyFixes(sql, results);
+          await writeFixedSql(migrationPath, fixedSql);
+          if (appliedCount > 0) {
+            console.log(`✔ Auto-fixed ${appliedCount} issue(s) in ${migrationPath}`);
+          }
+          allResults.push(...skippedResults);
+        } else {
+          allResults.push(...results);
+        }
       } else {
         const migrationFiles = await findMigrationFiles(migrationsDir);
         for (const filePath of migrationFiles) {
@@ -39,7 +50,16 @@ export function registerCheckCommand(program: Command): void {
           }
           const sql = await readFile(filePath, "utf-8");
           const results = await check({ sql, config, migrationPath: filePath });
-          allResults.push(...results);
+          if (options.fix && results.length > 0) {
+            const { sql: fixedSql, appliedCount, skippedResults } = applyFixes(sql, results);
+            await writeFixedSql(filePath, fixedSql);
+            if (appliedCount > 0) {
+              console.log(`✔ Auto-fixed ${appliedCount} issue(s) in ${filePath}`);
+            }
+            allResults.push(...skippedResults);
+          } else {
+            allResults.push(...results);
+          }
         }
       }
 
