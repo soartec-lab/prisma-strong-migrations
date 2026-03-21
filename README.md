@@ -27,7 +27,7 @@ $ npx prisma-strong-migrations check
 
 🔍 Checking migration: 20240320_remove_user_name
 
-=== ❌ Dangerous operation detected [SM001] ===
+=== ❌ Dangerous operation detected [removeColumn] ===
 
 📍 Line 3: ALTER TABLE "users" DROP COLUMN "name"
 
