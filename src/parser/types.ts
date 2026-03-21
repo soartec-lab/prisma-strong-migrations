@@ -5,6 +5,7 @@ export type StatementType =
   | "createTable"
   | "dropTable"
   | "alterSchema"
+  | "disableTransaction"
   | "unknown";
 
 export type AlterAction =
@@ -34,6 +35,8 @@ export interface ParsedStatement {
   constraintName?: string;
   constraintType?: ConstraintType;
   notValid?: boolean;
+  notNull?: boolean;
+  hasDefault?: boolean;
   disabled?: string[];
   disableReason?: string;
 }

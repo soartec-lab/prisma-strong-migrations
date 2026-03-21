@@ -13,6 +13,8 @@ import type { ParsedStatement, ConstraintType } from "./types";
 const DISABLE_COMMENT_PATTERN =
   /--\s*prisma-strong-migrations-disable-next-line\s*([\w,\s]*)(?:--\s*(.+))?/;
 
+const DISABLE_TRANSACTION_PATTERN = /--\s*prisma-migrate-disable-next-transaction/i;
+
 const NOT_VALID_PATTERN = /\bNOT\s+VALID\b/i;
 
 // Matches a quoted identifier ("foo") or an unquoted identifier (foo)
@@ -129,7 +131,10 @@ function convertAlterTable(
   if (!change) return null;
 
   switch (change.type) {
-    case "add column":
+    case "add column": {
+      const constraints = change.column.constraints ?? [];
+      const notNull = constraints.some((c) => c.type === "not null");
+      const hasDefault = constraints.some((c) => c.type === "default");
       return {
         type: "alterTable",
         raw,
@@ -138,7 +143,10 @@ function convertAlterTable(
         action: "addColumn",
         column: change.column.name.name,
         dataType: getDataTypeName(change.column.dataType),
+        ...(notNull ? { notNull: true } : {}),
+        ...(hasDefault ? { hasDefault: true } : {}),
       };
+    }
 
     case "drop column":
       return {
@@ -219,6 +227,15 @@ function convertDropIndex(statement: DropStatement, raw: string, line: number): 
   };
 }
 
+function convertDropTable(statement: DropStatement, raw: string, line: number): ParsedStatement {
+  return {
+    type: "dropTable",
+    raw,
+    line,
+    table: statement.names[0]?.name,
+  };
+}
+
 function convertStatement(statement: Statement, raw: string, line: number): ParsedStatement | null {
   switch (statement.type) {
     case "alter table":
@@ -227,6 +244,8 @@ function convertStatement(statement: Statement, raw: string, line: number): Pars
       return convertCreateIndex(statement as CreateIndexStatement, raw, line);
     case "drop index":
       return convertDropIndex(statement as DropStatement, raw, line);
+    case "drop table":
+      return convertDropTable(statement as DropStatement, raw, line);
     default:
       return null;
   }
@@ -377,6 +396,21 @@ function getRawTextAndLine(
 
 // ---- Public API ----
 
+function buildDisableTransactionStatements(sql: string): ParsedStatement[] {
+  const results: ParsedStatement[] = [];
+  const lines = sql.split("\n");
+  lines.forEach((lineText, lineIndex) => {
+    if (DISABLE_TRANSACTION_PATTERN.test(lineText)) {
+      results.push({
+        type: "disableTransaction",
+        raw: lineText.trim(),
+        line: lineIndex + 1,
+      });
+    }
+  });
+  return results;
+}
+
 export function parseSql(sql: string): ParsedStatement[] {
   const disableMap = buildDisableMap(sql);
 
@@ -389,40 +423,46 @@ export function parseSql(sql: string): ParsedStatement[] {
     return parsedStatement;
   }
 
+  const disableTransactionStatements = buildDisableTransactionStatements(sql);
+
   // Fast path: parse the whole file at once
   try {
     const { ast } = parseWithComments(sql, { locationTracking: true });
-    return ast.flatMap((statement) => {
+    const sqlStatements = ast.flatMap((statement) => {
       if (!statement._location) return [];
       const { raw, line } = getRawTextAndLine(sql, statement._location);
       const parsed = convertStatement(statement, raw, line);
       return parsed ? [applyDisableComment(parsed)] : [];
     });
+    return [...disableTransactionStatements, ...sqlStatements];
   } catch {
     // pgsql-ast-parser failed on the whole file (e.g. EXCLUDE constraints, NOT VALID)
     // Fall back to parsing each statement individually
   }
 
   // Slow path: split into individual statements and parse each one
-  return splitIntoStatements(sql).flatMap(({ text, offset }) => {
-    const trimmed = text.trim().replace(/;$/, "");
-    if (!trimmed) return [];
+  return [
+    ...disableTransactionStatements,
+    ...splitIntoStatements(sql).flatMap(({ text, offset }) => {
+      const trimmed = text.trim().replace(/;$/, "");
+      if (!trimmed) return [];
 
-    const firstTokenOffset = offset + text.search(/\S/);
-    const line = lineNumberAt(firstTokenOffset, sql);
+      const firstTokenOffset = offset + text.search(/\S/);
+      const line = lineNumberAt(firstTokenOffset, sql);
 
-    // Try AST parse for this single statement
-    try {
-      const { ast } = parseWithComments(trimmed + ";", { locationTracking: true });
-      if (ast[0]) {
-        const parsed = convertStatement(ast[0], trimmed, line);
-        return parsed ? [applyDisableComment(parsed)] : [];
+      // Try AST parse for this single statement
+      try {
+        const { ast } = parseWithComments(trimmed + ";", { locationTracking: true });
+        if (ast[0]) {
+          const parsed = convertStatement(ast[0], trimmed, line);
+          return parsed ? [applyDisableComment(parsed)] : [];
+        }
+      } catch {
+        // AST parse failed → try regex patterns
       }
-    } catch {
-      // AST parse failed → try regex patterns
-    }
 
-    const parsed = parseWithRegexFallback(trimmed, line);
-    return parsed ? [applyDisableComment(parsed)] : [];
-  });
+      const parsed = parseWithRegexFallback(trimmed, line);
+      return parsed ? [applyDisableComment(parsed)] : [];
+    }),
+  ];
 }
