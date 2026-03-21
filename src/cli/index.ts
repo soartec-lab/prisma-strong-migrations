@@ -3,7 +3,8 @@ import { Command } from "commander";
 import { registerCheckCommand } from "./commands/check";
 import { registerInitCommand } from "./commands/init";
 import { registerInitRuleCommand } from "./commands/init-rule";
-import { registerMigrateCommand } from "./commands/migrate/index";
+import { registerDeployCommand } from "./commands/migrate/deploy";
+import { registerDevCommand } from "./commands/migrate/dev";
 
 const program = new Command();
 
@@ -15,6 +16,10 @@ program
 registerCheckCommand(program);
 registerInitCommand(program);
 registerInitRuleCommand(program);
-registerMigrateCommand(program);
+
+const migrate = program.command("migrate").description("Run Prisma migrations with safety checks");
+
+registerDeployCommand(migrate);
+registerDevCommand(migrate);
 
 program.parse();
