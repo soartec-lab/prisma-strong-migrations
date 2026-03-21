@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "description": "Detect dangerous operations in Prisma migrations",
   "bin": {
-    "prisma-strong-migrations": "./dist/cli.js",
-    "psm": "./dist/cli.js"
+    "prisma-strong-migrations": "./dist/cli/index.js",
+    "psm": "./dist/cli/index.js"
   },
   "type": "module",
   "main": "./dist/index.js",
