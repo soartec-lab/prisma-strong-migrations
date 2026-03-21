@@ -24,6 +24,7 @@ import { setTablespaceRule } from "./set-tablespace";
 import { clusterTableRule } from "./cluster-table";
 import { disableTriggerRule } from "./disable-trigger";
 import { createTableAsSelectRule } from "./create-table-as-select";
+import { vacuumInMigrationRule } from "./vacuum-in-migration";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -50,6 +51,7 @@ export const builtinRules: Rule[] = [
   clusterTableRule,
   disableTriggerRule,
   createTableAsSelectRule,
+  vacuumInMigrationRule,
   indexColumnsCountRule,
 ];
 
