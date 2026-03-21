@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspaces/prisma-strong-migrations:cached
+      - prisma-strong-migrations-node-modules:/workspaces/prisma-strong-migrations/node_modules
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/prisma_strong_migrations_test
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prisma_strong_migrations_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  prisma-strong-migrations-node-modules:
+  postgres-data:
