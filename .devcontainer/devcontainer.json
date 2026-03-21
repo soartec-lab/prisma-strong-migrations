@@ -13,7 +13,8 @@
         "esbenp.prettier-vscode",
         "bradlc.vscode-tailwindcss",
         "prisma.prisma",
-        "vitest.explorer"
+        "vitest.explorer",
+        "anthropic.claude-code"
       ],
       "settings": {
         "editor.formatOnSave": true,
