@@ -75,8 +75,8 @@ describe("addNotNullWithoutDefaultRule", () => {
   });
 
   describe("severity", () => {
-    it("should be a warning", () => {
-      expect(addNotNullWithoutDefaultRule.severity).toBe("warning");
+    it("should be an error", () => {
+      expect(addNotNullWithoutDefaultRule.severity).toBe("error");
     });
   });
 

@@ -63,8 +63,8 @@ describe("setTablespaceRule", () => {
   });
 
   describe("severity", () => {
-    it("should be warning", () => {
-      expect(setTablespaceRule.severity).toBe("warning");
+    it("should be error", () => {
+      expect(setTablespaceRule.severity).toBe("error");
     });
   });
 });

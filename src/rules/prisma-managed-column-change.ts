@@ -51,7 +51,7 @@ To skip this check, add above the statement:
 
 export const prismaManagedColumnChangeRule: Rule = {
   name: "prismaManagedColumnChange",
-  severity: "warning",
+  severity: "error",
   description:
     "Modifying a Prisma-managed column (e.g. @updatedAt) at the DB level conflicts with Prisma Client",
   detect,

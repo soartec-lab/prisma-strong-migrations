@@ -36,7 +36,7 @@ To skip this check, add above the statement:
 
 export const addNotNullWithoutDefaultRule: Rule = {
   name: "addNotNullWithoutDefault",
-  severity: "warning",
+  severity: "error",
   description:
     "Adding a NOT NULL column without a default value will fail on tables with existing rows",
   detect,

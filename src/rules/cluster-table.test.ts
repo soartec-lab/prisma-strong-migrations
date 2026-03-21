@@ -73,8 +73,8 @@ describe("clusterTableRule", () => {
   });
 
   describe("severity", () => {
-    it("should be warning", () => {
-      expect(clusterTableRule.severity).toBe("warning");
+    it("should be error", () => {
+      expect(clusterTableRule.severity).toBe("error");
     });
   });
 });

@@ -29,7 +29,7 @@ To skip this check, add above the statement:
 
 export const clusterTableRule: Rule = {
   name: "clusterTable",
-  severity: "warning",
+  severity: "error",
   description: "CLUSTER physically rewrites the table and acquires an AccessExclusiveLock",
   detect,
   message,

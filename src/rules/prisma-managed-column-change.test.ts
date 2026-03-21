@@ -121,8 +121,8 @@ describe("prismaManagedColumnChangeRule", () => {
   });
 
   describe("rule metadata", () => {
-    it("should have warning severity", () => {
-      expect(prismaManagedColumnChangeRule.severity).toBe("warning");
+    it("should have error severity", () => {
+      expect(prismaManagedColumnChangeRule.severity).toBe("error");
     });
 
     it("should have correct name", () => {

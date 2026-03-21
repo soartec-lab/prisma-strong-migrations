@@ -27,7 +27,7 @@ To skip this check, add above the statement:
 
 export const setTablespaceRule: Rule = {
   name: "setTablespace",
-  severity: "warning",
+  severity: "error",
   description: "SET TABLESPACE physically moves the table and acquires an AccessExclusiveLock",
   detect,
   message,
