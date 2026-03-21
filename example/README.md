@@ -1,218 +1,195 @@
-# WriteMate サンプルアプリ
+# WriteMate — Example App
 
-prisma-strong-migrations を使って、**実際の開発フローでマイグレーションの危険操作を検出・修正する**体験ができるサンプルです。
-
-## ゴール
-
-1. スキーマを変更して `prisma migrate dev --create-only` でマイグレーションを生成
-2. `psm check` で危険な操作を検出
-3. マイグレーション SQL を手動で修正
-4. `prisma migrate dev` で適用
+A sample blog platform to experience the real `prisma-strong-migrations` workflow:
+edit a schema → generate a migration → see the safety error → fix it → apply.
 
 ---
 
-## セットアップ
+## Schema
 
-### 1. 依存パッケージをインストール
+Three tables: `users`, `posts`, `comments`.
 
-```bash
-vp install
+```
+users    — id, email, name, created_at
+posts    — id, title, body, user_id, published_at
+comments — id, body, post_id, user_id, created_at
 ```
 
-### 2. `.env` を作成
+---
+
+## Setup
+
+### 1. Install dependencies
+
+```bash
+pnpm install
+```
+
+### 2. Create `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-### 3. PostgreSQL を起動
+### 3. Start PostgreSQL
 
 ```bash
-vp run db:start
+docker compose up -d
 ```
 
-### 4. 初期マイグレーションを適用
+### 4. Apply the initial migration
 
 ```bash
-vp run migrate:apply
+pnpm exec prisma migrate dev --name init
 ```
-
-> 初回は `20240101000000_init` が自動生成されてテーブルが作られます。
 
 ---
 
-## チュートリアル
+## Tutorial
 
-### シナリオ 1: インデックスを追加する（❌ 危険 → ✅ 修正）
+### Scenario 1 — Add an index (the dangerous way)
 
-#### Step 1: スキーマを編集
+#### Step 1: Edit the schema
 
-`prisma/schema.prisma` の `Post` モデルに `@@index([userId])` を追加します。
+Add `@@index([userId])` to the `Post` model in `prisma/schema.prisma`:
 
 ```prisma
 model Post {
-  // ...既存フィールド...
+  // ...existing fields...
 
-  @@index([userId])   // ← これを追加
+  @@index([userId])  // add this
   @@map("posts")
 }
 ```
 
-#### Step 2: マイグレーションを生成（DB 未適用）
+#### Step 2: Generate the migration and run the safety check
 
 ```bash
-vp run migrate:create
-# マイグレーション名: add_index_posts_user_id
+pnpm exec prisma-strong-migrations migrate dev --name add_index_posts_user_id
 ```
 
-生成されたファイル: `prisma/migrations/YYYYMMDDHHMMSS_add_index_posts_user_id/migration.sql`
+`prisma-strong-migrations migrate dev` creates the migration with `--create-only`,
+runs the safety check automatically, and **stops before applying** if an error is found.
+
+Expected output:
+
+```
+error [addIndex] prisma/migrations/.../migration.sql line 2
+  Adding index "posts_user_id_idx" without CONCURRENTLY locks the table during creation.
+```
+
+#### Step 3: Fix the migration SQL
+
+Open the generated `prisma/migrations/…/migration.sql` and edit it:
 
 ```sql
--- CreateIndex
-CREATE INDEX "posts_user_id_idx" ON "posts"("user_id");
-```
-
-#### Step 3: psm check で危険を検出
-
-```bash
-vp run check
-```
-
-```
-error [addIndex] line 2
-  Adding index "posts_user_id_idx" without CONCURRENTLY locks the table
-```
-
-#### Step 4: マイグレーション SQL を修正
-
-生成された `migration.sql` を以下のように編集します。
-
-```sql
--- prisma-migrate-disable-next-transaction
+-- migrate:disable-transaction
 -- CreateIndex
 CREATE INDEX CONCURRENTLY "posts_user_id_idx" ON "posts"("user_id");
 ```
 
-#### Step 5: 再チェック → エラーなし
+#### Step 4: Re-run the check — no errors
 
 ```bash
-vp run check
-# ✓ 0 errors
+pnpm exec prisma-strong-migrations check
 ```
 
-#### Step 6: 適用
+```
+✓ 0 errors, 0 warnings
+```
+
+#### Step 5: Apply
 
 ```bash
-vp run migrate:apply
+pnpm exec prisma migrate dev
 ```
 
 ---
 
-### シナリオ 2: カラムを削除する（❌ 危険 → ✅ 正しい手順）
+### Scenario 2 — Drop a column
 
-#### Step 1: スキーマを編集
+#### Step 1: Edit the schema
 
-`User` モデルから `name` フィールドを削除します。
+Remove the `name` field from the `User` model.
 
-```prisma
-model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  // name を削除
-  createdAt DateTime  @default(now()) @map("created_at")
-  // ...
-}
-```
-
-#### Step 2: マイグレーションを生成
+#### Step 2: Generate the migration
 
 ```bash
-vp run migrate:create
-# マイグレーション名: drop_column_users_name
+pnpm exec prisma-strong-migrations migrate dev --name drop_users_name
 ```
 
-#### Step 3: psm check で危険を検出
-
-```bash
-vp run check
-```
+Expected output:
 
 ```
-error [removeColumn] line 2
-  Removing column "name" from table "users" may cause errors in running application
+error [removeColumn] prisma/migrations/.../migration.sql line 2
+  Removing column "name" from table "users" may cause errors in a running application.
 ```
 
-#### Step 4: 提案された安全な手順に従う
+#### Step 3: Follow the suggested steps
 
-psm の出力に示された手順を確認します。
+Column removal cannot be auto-fixed — application code must be updated first:
 
 ```
-✅ Good: Follow these steps:
-   1. Remove all usages of 'name' field from your application code
-   2. Run 'npx prisma generate' to update Prisma Client
-   3. Deploy the application code changes
+✅ Safe approach:
+   1. Remove all usages of the "name" field from application code
+   2. Run "prisma generate" to update the Prisma Client
+   3. Deploy the updated application code
    4. Then apply this migration
 ```
 
-カラム削除は SQL で自動修正できません。アプリコードの変更が先に必要です。
-
 ---
 
-### シナリオ 3: カラム型を変更する（❌ 危険 → ✅ 修正）
+### Scenario 3 — Change a column type
 
-#### Step 1: スキーマを編集
+#### Step 1: Edit the schema
 
-`Post.body` を `TEXT` から `VARCHAR(255)` に変更します。
+Change `Post.body` from the default `TEXT` to `VARCHAR(255)`:
 
 ```prisma
 model Post {
-  // ...
-  body   String   @db.VarChar(255)   // ← 型を追加
-  // ...
+  body  String  @db.VarChar(255)
 }
 ```
 
-#### Step 2: マイグレーションを生成・チェック
+#### Step 2: Generate the migration
 
 ```bash
-vp run migrate:create
-# マイグレーション名: change_posts_body_type
-
-vp run check
-# error [changeColumnType] ...
+pnpm exec prisma-strong-migrations migrate dev --name change_posts_body_type
 ```
 
-#### Step 3: 対応を検討
+Expected output:
 
-型変更は既存データの互換性に応じて対応が変わります。
-- `TEXT → VARCHAR(255)`: 255文字超のデータがあると切り捨てられる
-- psm の提案に従い、段階的な移行（新カラム → データ移行 → 旧カラム削除）を検討
-
----
-
-## コマンド一覧
-
-| コマンド | 内容 |
-|---------|------|
-| `vp run db:start` | PostgreSQL を起動 |
-| `vp run db:stop` | PostgreSQL を停止 |
-| `vp run migrate:create` | マイグレーションを生成（未適用） |
-| `vp run migrate:apply` | マイグレーションを適用 |
-| `vp run check` | 全マイグレーションをチェック |
-| `vp run check:json` | JSON 形式でチェック結果を出力 |
+```
+error [changeColumnType] prisma/migrations/.../migration.sql line 2
+  Changing the type of column "body" on table "posts" may cause data loss or application errors.
+```
 
 ---
 
-## 参考: psm check の disable コメント
+## Useful commands
 
-特定の警告を意図的にスキップしたい場合は、SQL の直前にコメントを追加します。
+| Command | Description |
+|---------|-------------|
+| `docker compose up -d` | Start PostgreSQL |
+| `docker compose down` | Stop PostgreSQL |
+| `pnpm exec prisma-strong-migrations migrate dev --name <name>` | Generate migration → check → apply (stops on error) |
+| `pnpm exec prisma-strong-migrations check` | Check all existing migrations |
+| `pnpm exec prisma-strong-migrations check --fix` | Auto-fix where possible (e.g. adds CONCURRENTLY) |
+| `pnpm exec prisma-strong-migrations check --format json` | Output results as JSON |
+| `pnpm exec prisma migrate dev` | Apply already-fixed migrations |
+
+---
+
+## Skipping a check
+
+Add a disable comment directly above the statement to suppress a specific rule:
 
 ```sql
 -- prisma-strong-migrations-disable-next-line addIndex
 CREATE INDEX "posts_user_id_idx" ON "posts"("user_id");
 ```
 
-全ルールをスキップ:
+Omit the rule name to suppress all rules for that statement:
 
 ```sql
 -- prisma-strong-migrations-disable-next-line

@@ -1,5 +1,5 @@
-// WriteMate - ブログプラットフォームのスキーマ
-// このファイルを編集して prisma migrate dev --create-only でマイグレーションを生成します
+// WriteMate - Blog platform schema
+// Edit this file and run `prisma-strong-migrations migrate dev` to generate and apply migrations safely
 
 datasource db {
   provider = "postgresql"

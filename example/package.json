@@ -1,22 +1,12 @@
 {
   "name": "writemate-example",
   "version": "0.1.0",
-  "description": "WriteMate - prisma-strong-migrations 体験用サンプルアプリ",
+  "description": "WriteMate - sample app for prisma-strong-migrations",
   "private": true,
   "type": "module",
-  "scripts": {
-    "db:start": "docker compose up -d",
-    "db:stop": "docker compose down",
-    "migrate:create": "prisma migrate dev --create-only",
-    "migrate:apply": "prisma migrate dev",
-    "check": "psm check",
-    "check:json": "psm check --format json"
-  },
   "devDependencies": {
     "prisma": "^6.0.0",
-    "prisma-strong-migrations": "file:..",
-    "vite-plus": "latest",
-    "@voidzero-dev/vite-plus-core": "latest"
+    "prisma-strong-migrations": "file:.."
   },
   "packageManager": "pnpm@10.32.1"
 }
