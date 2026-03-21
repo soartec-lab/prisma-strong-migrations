@@ -25,6 +25,12 @@ import { clusterTableRule } from "./cluster-table";
 import { disableTriggerRule } from "./disable-trigger";
 import { createTableAsSelectRule } from "./create-table-as-select";
 import { vacuumInMigrationRule } from "./vacuum-in-migration";
+import { concurrentWithoutDisableTransactionRule } from "./concurrent-without-disable-transaction";
+import { notValidValidateSameFileRule } from "./not-valid-validate-same-file";
+import { mixedStatementsWithDisabledTransactionRule } from "./mixed-statements-with-disabled-transaction";
+import { updateWithoutWhereRule } from "./update-without-where";
+import { deleteWithoutWhereRule } from "./delete-without-where";
+import { backfillInMigrationRule } from "./backfill-in-migration";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -52,6 +58,12 @@ export const builtinRules: Rule[] = [
   disableTriggerRule,
   createTableAsSelectRule,
   vacuumInMigrationRule,
+  concurrentWithoutDisableTransactionRule,
+  notValidValidateSameFileRule,
+  mixedStatementsWithDisabledTransactionRule,
+  updateWithoutWhereRule,
+  deleteWithoutWhereRule,
+  backfillInMigrationRule,
   indexColumnsCountRule,
 ];
 
