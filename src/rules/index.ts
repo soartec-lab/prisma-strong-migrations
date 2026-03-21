@@ -34,6 +34,7 @@ import { backfillInMigrationRule } from "./backfill-in-migration";
 import { enumValueRemovalRule } from "./enum-value-removal";
 import { implicitM2mTableChangeRule } from "./implicit-m2m-table-change";
 import { intPrimaryKeyRule } from "./int-primary-key";
+import { cuidUuidDefaultRemovalRule } from "./cuid-uuid-default-removal";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -70,6 +71,7 @@ export const builtinRules: Rule[] = [
   enumValueRemovalRule,
   implicitM2mTableChangeRule,
   intPrimaryKeyRule,
+  cuidUuidDefaultRemovalRule,
   indexColumnsCountRule,
 ];
 
