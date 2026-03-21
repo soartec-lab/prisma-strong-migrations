@@ -3,13 +3,6 @@ import { resolve } from "node:path";
 import type { Config } from "./types";
 import { DEFAULT_CONFIG } from "./types";
 
-export class ConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ConfigError";
-  }
-}
-
 export async function loadConfig(configPath?: string): Promise<Config> {
   const path = configPath ? resolve(configPath) : resolve("prisma-strong-migrations.config.js");
 
@@ -22,6 +15,6 @@ export async function loadConfig(configPath?: string): Promise<Config> {
     const userConfig: Config = module.default ?? module;
     return { ...DEFAULT_CONFIG, ...userConfig };
   } catch (error) {
-    throw new ConfigError(`Failed to load config from ${path}: ${error}`);
+    throw new Error(`Failed to load config from ${path}: ${error}`);
   }
 }
