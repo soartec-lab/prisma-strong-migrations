@@ -631,19 +631,24 @@ export function parseSql(sql: string): ParsedStatement[] {
       const firstTokenOffset = offset + text.search(/\S/);
       const line = lineNumberAt(firstTokenOffset, sql);
 
+        // Strip block comments before AST/regex parsing — pgsql-ast-parser chokes on
+      // characters like backticks that Prisma puts inside /* Warnings: ... */ blocks.
+      const stripped = trimmed.replace(/\/\*[\s\S]*?\*\//g, "").trim();
+      if (!stripped) return [];
+
       // Try AST parse for this single statement
       try {
-        const { ast } = parseWithComments(trimmed + ";", { locationTracking: true });
+        const { ast } = parseWithComments(stripped + ";", { locationTracking: true });
         if (ast[0]) {
           const parsed =
-            convertStatement(ast[0], trimmed, line) ?? parseWithRegexFallback(trimmed, line);
+            convertStatement(ast[0], trimmed, line) ?? parseWithRegexFallback(stripped, line);
           return parsed ? [applyDisableComment(parsed)] : [];
         }
       } catch {
         // AST parse failed → try regex patterns
       }
 
-      const parsed = parseWithRegexFallback(trimmed, line);
+      const parsed = parseWithRegexFallback(stripped, line);
       return parsed ? [applyDisableComment(parsed)] : [];
     }),
   ];
