@@ -144,6 +144,22 @@ vp check
 vp pack
 ```
 
+#### Running CLI Tools
+
+**All CLI tools must be installed as `devDependencies` and executed via `vp exec`.**
+
+```bash
+# ✅ Good: install as devDependency, run via vp exec
+vp add -D knip
+vp exec knip
+
+# ❌ Bad: run via npx (downloads on the fly, not reproducible)
+npx knip
+```
+
+- `vp exec <tool>` — runs a binary from `node_modules/.bin` (equivalent to `pnpm exec`)
+- `vp dlx <tool>` — runs without installing (use only for one-off exploration, not in CI or scripts)
+
 ### 4. Implementation Order
 
 Follow this order for implementation:
