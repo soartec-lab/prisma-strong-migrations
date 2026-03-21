@@ -8,8 +8,10 @@ echo "🚀 Setting up prisma-strong-migrations development environment..."
 git config --global --add safe.directory /workspaces/prisma-strong-migrations
 
 # Make git-secrets available as a git subcommand (git secrets).
-mkdir -p /home/node/.local/bin
-ln -sf /home/node/bin/git-secrets /home/node/.local/bin/git-secrets
+# The pre-commit hook references /home/node/bin/git-secrets, so symlink the
+# system-installed binary (/usr/local/bin/git-secrets) to that path.
+mkdir -p /home/node/bin
+ln -sf /usr/local/bin/git-secrets /home/node/bin/git-secrets
 
 # Install dependencies if package.json exists.
 # pnpm may fail on first run due to a symlink race condition; retry once if needed.
