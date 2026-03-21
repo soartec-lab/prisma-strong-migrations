@@ -13,10 +13,22 @@ const suggestion = (_statement: ParsedStatement): string => {
   return `
 ❌ Bad: Creating an index without CONCURRENTLY acquires a lock that prevents reads and writes
 
-✅ Good: Use CREATE INDEX CONCURRENTLY to avoid table lock:
-   CREATE INDEX CONCURRENTLY "index_name" ON "table_name"("column_name");
+✅ Good: Follow these steps:
+   1. Generate migration file only (do not apply yet):
+      npx prisma migrate dev --create-only --name add_your_index_name
 
-Note: CONCURRENTLY cannot be used inside a transaction block.
+   2. Edit the generated migration file:
+      - Add the following as the FIRST LINE of the file:
+        -- prisma-migrate-disable-next-transaction
+      - Add CONCURRENTLY to the CREATE INDEX statement:
+        CREATE INDEX CONCURRENTLY "index_name" ON "table_name"("column_name");
+
+   3. Apply the migration:
+      npx prisma migrate dev
+
+⚠️  Notes:
+   - -- prisma-migrate-disable-next-transaction disables transactions for the ENTIRE file.
+   - Keep this migration file separate — ideally one statement only.
 
 To skip this check, add above the statement:
    -- prisma-strong-migrations-disable-next-line add_index

@@ -16,6 +16,9 @@ import { addAutoIncrementRule } from "./add-auto-increment";
 import { addStoredGeneratedRule } from "./add-stored-generated";
 import { renameSchemaRule } from "./rename-schema";
 import { indexColumnsCountRule } from "./index-columns-count";
+import { dropTableRule } from "./drop-table";
+import { disableTransactionWarningRule } from "./disable-transaction-warning";
+import { addNotNullWithoutDefaultRule } from "./add-not-null-without-default";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -34,5 +37,8 @@ export const builtinRules: Rule[] = [
   addAutoIncrementRule,
   addStoredGeneratedRule,
   renameSchemaRule,
+  dropTableRule,
+  disableTransactionWarningRule,
+  addNotNullWithoutDefaultRule,
   indexColumnsCountRule,
 ];
