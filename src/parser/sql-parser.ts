@@ -308,11 +308,86 @@ function matchAddExcludeConstraint(sql: string, line: number): ParsedStatement |
   };
 }
 
+function matchTruncateTable(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*TRUNCATE\b/i.test(sql)) return null;
+  const match = sql.match(new RegExp(`TRUNCATE\\s+(?:TABLE\\s+)?${IDENT_PATTERN}`, "i"));
+  return {
+    type: "truncateTable",
+    raw: sql,
+    line,
+    table: match ? (match[1] ?? match[2]) : undefined,
+  };
+}
+
+function matchSetTablespace(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*ALTER\s+TABLE\b/i.test(sql)) return null;
+  if (!/\bSET\s+TABLESPACE\b/i.test(sql)) return null;
+  const tableMatch = sql.match(ALTER_TABLE_PATTERN);
+  return {
+    type: "setTablespace",
+    raw: sql,
+    line,
+    table: tableMatch ? extractIdentifier(tableMatch) : undefined,
+  };
+}
+
+function matchClusterTable(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*CLUSTER\b/i.test(sql)) return null;
+  const match = sql.match(new RegExp(`CLUSTER\\s+${IDENT_PATTERN}`, "i"));
+  return {
+    type: "clusterTable",
+    raw: sql,
+    line,
+    table: match ? (match[1] ?? match[2]) : undefined,
+  };
+}
+
+function matchDisableTrigger(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*ALTER\s+TABLE\b/i.test(sql)) return null;
+  if (!/\bDISABLE\s+TRIGGER\b/i.test(sql)) return null;
+  const tableMatch = sql.match(ALTER_TABLE_PATTERN);
+  return {
+    type: "disableTrigger",
+    raw: sql,
+    line,
+    table: tableMatch ? extractIdentifier(tableMatch) : undefined,
+  };
+}
+
+function matchCreateTableAsSelect(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*CREATE\s+TABLE\b/i.test(sql)) return null;
+  if (!/\bAS\s+SELECT\b/i.test(sql)) return null;
+  const match = sql.match(new RegExp(`CREATE\\s+TABLE\\s+(?:IF\\s+NOT\\s+EXISTS\\s+)?${IDENT_PATTERN}`, "i"));
+  return {
+    type: "createTableAsSelect",
+    raw: sql,
+    line,
+    table: match ? (match[1] ?? match[2]) : undefined,
+  };
+}
+
+function matchVacuum(sql: string, line: number): ParsedStatement | null {
+  if (!/^\s*VACUUM\b/i.test(sql)) return null;
+  const match = sql.match(new RegExp(`VACUUM\\s+(?:FULL\\s+)?(?:FREEZE\\s+)?(?:ANALYZE\\s+)?${IDENT_PATTERN}`, "i"));
+  return {
+    type: "vacuum",
+    raw: sql,
+    line,
+    table: match ? (match[1] ?? match[2]) : undefined,
+  };
+}
+
 function parseWithRegexFallback(sql: string, line: number): ParsedStatement | null {
   return (
     matchAlterSchemaRename(sql, line) ??
     matchAddConstraintNotValid(sql, line) ??
-    matchAddExcludeConstraint(sql, line)
+    matchAddExcludeConstraint(sql, line) ??
+    matchTruncateTable(sql, line) ??
+    matchSetTablespace(sql, line) ??
+    matchClusterTable(sql, line) ??
+    matchDisableTrigger(sql, line) ??
+    matchCreateTableAsSelect(sql, line) ??
+    matchVacuum(sql, line)
   );
 }
 

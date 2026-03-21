@@ -6,6 +6,12 @@ export type StatementType =
   | "dropTable"
   | "alterSchema"
   | "disableTransaction"
+  | "truncateTable"
+  | "setTablespace"
+  | "clusterTable"
+  | "disableTrigger"
+  | "createTableAsSelect"
+  | "vacuum"
   | "unknown";
 
 export type AlterAction =
