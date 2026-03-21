@@ -28,6 +28,7 @@
   "remoteEnv": {
     "PATH": "/home/node/.vite-plus/bin:${containerEnv:PATH}"
   },
+  "onCreateCommand": "mkdir -p /workspaces/prisma-strong-migrations/node_modules && chown -R node:node /workspaces/prisma-strong-migrations/node_modules",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "remoteUser": "node"
 }
