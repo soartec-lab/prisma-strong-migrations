@@ -1,0 +1,46 @@
+// WriteMate - ブログプラットフォームのスキーマ
+// このファイルを編集して prisma migrate dev --create-only でマイグレーションを生成します
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String
+  createdAt DateTime  @default(now()) @map("created_at")
+  posts     Post[]
+  comments  Comment[]
+
+  @@map("users")
+}
+
+model Post {
+  id          Int       @id @default(autoincrement())
+  title       String
+  body        String
+  userId      Int       @map("user_id")
+  publishedAt DateTime? @map("published_at")
+  user        User      @relation(fields: [userId], references: [id])
+  comments    Comment[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  body      String
+  postId    Int      @map("post_id")
+  userId    Int      @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("comments")
+}
