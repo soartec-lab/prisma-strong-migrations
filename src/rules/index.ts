@@ -19,6 +19,7 @@ import { indexColumnsCountRule } from "./index-columns-count";
 import { dropTableRule } from "./drop-table";
 import { disableTransactionWarningRule } from "./disable-transaction-warning";
 import { addNotNullWithoutDefaultRule } from "./add-not-null-without-default";
+import { truncateTableRule } from "./truncate-table";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -40,6 +41,7 @@ export const builtinRules: Rule[] = [
   dropTableRule,
   disableTransactionWarningRule,
   addNotNullWithoutDefaultRule,
+  truncateTableRule,
   indexColumnsCountRule,
 ];
 
