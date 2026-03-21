@@ -8,9 +8,17 @@ import { loadConfig } from "../config/loader";
 import { findMigrationFiles } from "./find-migration-files";
 
 function findPrismaBin(): string {
-  const localPrisma = resolve(process.cwd(), "node_modules", ".bin", "prisma");
-  if (existsSync(localPrisma)) return localPrisma;
-  return "prisma";
+  let dir = process.cwd();
+  // Walk up the directory tree to support pnpm/yarn workspaces where
+  // node_modules/.bin lives at the workspace root, not in the package dir.
+  while (true) {
+    const bin = resolve(dir, "node_modules", ".bin", "prisma");
+    if (existsSync(bin)) return bin;
+    const parent = dirname(dir);
+    if (parent === dir) break; // reached filesystem root
+    dir = parent;
+  }
+  return "prisma"; // fallback: rely on PATH
 }
 
 export async function runCheckAndReport(
@@ -42,40 +50,49 @@ export function runPrisma(args: string[]): number {
 }
 
 /**
- * Query the DB via `prisma db execute` and return the set of applied migration names.
- * Returns an empty Set on any error (DB unreachable, table missing, etc.) so the
- * caller can degrade gracefully.
+ * Run `prisma migrate status` and return the set of migration names that are
+ * NOT yet applied (pending).  Prisma loads .env automatically, so DATABASE_URL
+ * does not need to be in process.env.
+ *
+ * Returns null when the status cannot be determined (command failed, unexpected
+ * output), so callers can fall back to checking all files.
  */
-export function getAppliedMigrationNames(schemaPath?: string): Set<string> {
-  const args = ["db", "execute", "--stdin"];
+export function getPendingMigrationNames(schemaPath?: string): Set<string> | null {
+  const args = ["migrate", "status"];
+  if (schemaPath) args.push("--schema", schemaPath);
 
-  if (schemaPath) {
-    args.push("--schema", schemaPath);
-  } else if (process.env.DATABASE_URL) {
-    args.push("--url", process.env.DATABASE_URL);
-  } else {
-    const defaultSchema = resolve(process.cwd(), "prisma", "schema.prisma");
-    if (existsSync(defaultSchema)) {
-      args.push("--schema", defaultSchema);
+  const result = spawnSync(findPrismaBin(), args, { encoding: "utf-8" });
+
+  // Exit 0 → "Database schema is up to date!" (nothing pending)
+  if (result.status === 0) return new Set();
+
+  // Exit 1 → has pending migrations OR an error
+  const stdout = result.stdout ?? "";
+
+  if (stdout.includes("Database schema is up to date")) return new Set();
+
+  // Parse the list of pending migration names from output like:
+  //   Following migration have not yet been applied:
+  //   20230101000000_foo
+  //   20230101000001_bar
+  const pendingNames = new Set<string>();
+  let inPendingSection = false;
+  for (const raw of stdout.split("\n")) {
+    const line = raw.trim();
+    if (line.includes("Following migration") && line.includes("not yet been applied")) {
+      inPendingSection = true;
+      continue;
+    }
+    if (inPendingSection) {
+      if (!line || line.startsWith("To apply")) {
+        inPendingSection = false;
+        continue;
+      }
+      pendingNames.add(line);
     }
   }
 
-  const sql =
-    "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL;";
-
-  const result = spawnSync(findPrismaBin(), args, {
-    input: sql,
-    encoding: "utf-8",
-  });
-
-  if (result.status !== 0) return new Set();
-
-  try {
-    const rows: { migration_name: string }[] = JSON.parse(result.stdout);
-    return new Set(rows.map((r) => r.migration_name));
-  } catch {
-    return new Set();
-  }
+  return pendingNames.size > 0 ? pendingNames : null;
 }
 
 /** Extract the Prisma migration name (parent directory) from a migration.sql path. */

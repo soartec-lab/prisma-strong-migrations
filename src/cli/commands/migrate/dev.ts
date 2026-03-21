@@ -6,7 +6,7 @@ import { loadConfig } from "../../../config/loader";
 import { loadCustomRules } from "../../../rules/loader";
 import { findMigrationFiles } from "../../find-migration-files";
 import {
-  getAppliedMigrationNames,
+  getPendingMigrationNames,
   migrationNameFromPath,
   runCheckAndReport,
   runPrisma,
@@ -35,33 +35,28 @@ export function registerDevCommand(migrate: Command): void {
       const createStatus = runPrisma([...createOnlyArgs, ...cmd.args]);
       if (createStatus !== 0) process.exit(createStatus);
 
-      // Determine pending migrations: all disk files minus those already applied in DB.
-      const appliedNames = getAppliedMigrationNames(options.schema);
+      // Ask Prisma which migrations are pending. Prisma loads .env automatically
+      // so DATABASE_URL does not need to be in process.env.
+      // Falls back to checking all disk files when status cannot be determined.
+      const pendingNames = getPendingMigrationNames(options.schema);
       const allFiles = await findMigrationFiles(migrationsDir);
-      const pendingFiles = allFiles.filter((f) => !appliedNames.has(migrationNameFromPath(f)));
+      const pendingFiles =
+        pendingNames !== null
+          ? allFiles.filter((f) => pendingNames.has(migrationNameFromPath(f)))
+          : allFiles;
 
-      // Auto-delete empty pending files (Prisma generates these when a pending
-      // migration already covers the schema diff). Non-empty files are kept so
-      // the user can edit and fix them.
-      const emptyFiles = pendingFiles.filter((f) =>
-        readFileSync(f, "utf-8").trim().startsWith("-- This is an empty migration"),
-      );
-      const cleanup = () => {
-        for (const file of emptyFiles) {
-          rmSync(dirname(file), { recursive: true, force: true });
+      // Immediately delete empty pending files. Prisma generates these when a
+      // pending migration already covers the schema diff — they are pure noise.
+      // Non-empty files are kept regardless of check outcome so the user can
+      // edit and retry.
+      const checkFiles = pendingFiles.filter((f) => {
+        if (readFileSync(f, "utf-8").trim().startsWith("-- This is an empty migration")) {
+          rmSync(dirname(f), { recursive: true, force: true });
+          return false;
         }
-      };
-      process.on("exit", cleanup);
-      process.on("SIGINT", () => {
-        cleanup();
-        process.exit(130);
-      });
-      process.on("SIGTERM", () => {
-        cleanup();
-        process.exit(143);
+        return true;
       });
 
-      const checkFiles = pendingFiles.filter((f) => !emptyFiles.includes(f));
       const hasErrors = await runCheckAndReport(migrationsDir, config, checkFiles);
 
       if (hasErrors) {
@@ -70,11 +65,6 @@ export function registerDevCommand(migrate: Command): void {
         );
         process.exit(1);
       }
-
-      // Check passed — unregister cleanup so the files are kept
-      process.off("exit", cleanup);
-      process.off("SIGINT", cleanup);
-      process.off("SIGTERM", cleanup);
 
       const applyArgs = ["migrate", "dev"];
       if (options.schema) applyArgs.push("--schema", options.schema);
