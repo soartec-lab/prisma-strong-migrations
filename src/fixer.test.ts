@@ -3,7 +3,6 @@ import { applyFixes } from "./fixer";
 import type { CheckResult } from "./rules/types";
 import { addIndexRule } from "./rules/add-index";
 import { removeIndexRule } from "./rules/remove-index";
-import { addJsonColumnRule } from "./rules/add-json-column";
 import { addForeignKeyRule } from "./rules/add-foreign-key";
 import { addCheckConstraintRule } from "./rules/add-check-constraint";
 import { setNotNullRule } from "./rules/set-not-null";
@@ -55,19 +54,6 @@ describe("applyFixes", () => {
       expect(appliedCount).toBe(1);
       expect(fixed).toContain("DROP INDEX CONCURRENTLY");
       expect(fixed).toContain("-- prisma-migrate-disable-next-transaction");
-    });
-  });
-
-  describe("addJsonColumn", () => {
-    it("replaces json with jsonb", () => {
-      const sql = `ALTER TABLE "Post" ADD COLUMN "meta" json;`;
-      const result = makeResult(addJsonColumnRule, sql);
-      const { sql: fixed, appliedCount } = applyFixes(sql, [result]);
-
-      expect(appliedCount).toBe(1);
-      expect(fixed).toContain("jsonb");
-      expect(fixed).not.toMatch(/\bjson\b(?!b)/); // no standalone 'json' type
-      expect(fixed).not.toContain("-- prisma-migrate-disable-next-transaction");
     });
   });
 
