@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { rmSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import { dirname } from "node:path";
 import { resolve } from "node:path";
 import { loadConfig } from "../../../config/loader";
@@ -36,11 +36,14 @@ export function registerDevCommand(migrate: Command): void {
         (f) => !existingFiles.has(f),
       );
 
-      // Treat newly generated files as temporary: register a cleanup handler that
-      // deletes them on process exit. If the check passes, we remove the handler
-      // so the files are kept.
+      // Only auto-delete empty migrations (Prisma generates these when a pending
+      // migration already covers the schema diff). Non-empty files are kept so
+      // the user can edit and fix them.
+      const emptyFiles = newFiles.filter((f) =>
+        readFileSync(f, "utf-8").trim().startsWith("-- This is an empty migration"),
+      );
       const cleanup = () => {
-        for (const file of newFiles) {
+        for (const file of emptyFiles) {
           rmSync(dirname(file), { recursive: true, force: true });
         }
       };
@@ -52,7 +55,7 @@ export function registerDevCommand(migrate: Command): void {
 
       if (hasErrors) {
         console.error(
-          "\n❌ Migration check failed. The generated migration files have been deleted. Fix the issues and try again.",
+          "\n❌ Migration check failed. Edit the migration files to fix the issues, then try again.",
         );
         process.exit(1);
       }
