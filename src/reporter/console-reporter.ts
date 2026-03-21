@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { relative } from "node:path";
 import type { CheckResult } from "../rules/types";
 
 export const consoleReport = (results: CheckResult[]): void => {
@@ -11,7 +12,7 @@ export const consoleReport = (results: CheckResult[]): void => {
 
   for (const [filePath, fileResults] of byFile) {
     console.log();
-    console.log(chalk.cyan.bold(filePath));
+    console.log(chalk.cyan.bold(relative(process.cwd(), filePath)));
 
     for (const { rule, statement, message, suggestion } of fileResults) {
       const severity = rule.severity === "error" ? chalk.red("error") : chalk.yellow("warning");
