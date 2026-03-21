@@ -9,6 +9,13 @@ export interface CheckContext {
   config: Config;
 }
 
+export interface FixResult {
+  /** SQL statements replacing the original (without trailing semicolons) */
+  statements: string[];
+  /** If true, the file needs a -- prisma-migrate-disable-next-transaction header */
+  requiresDisableTransaction?: boolean;
+}
+
 export interface Rule {
   name: string;
   severity: Severity;
@@ -16,6 +23,8 @@ export interface Rule {
   detect: (statement: ParsedStatement, context: CheckContext) => boolean;
   message: (statement: ParsedStatement) => string;
   suggestion: (statement: ParsedStatement) => string;
+  /** Auto-fix: defined only when the fix is purely SQL and mechanically safe */
+  fix?: (statement: ParsedStatement) => FixResult;
 }
 
 export interface CheckResult {
