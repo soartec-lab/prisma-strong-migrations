@@ -21,6 +21,7 @@ import { disableTransactionWarningRule } from "./disable-transaction-warning";
 import { addNotNullWithoutDefaultRule } from "./add-not-null-without-default";
 import { truncateTableRule } from "./truncate-table";
 import { setTablespaceRule } from "./set-tablespace";
+import { clusterTableRule } from "./cluster-table";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -44,6 +45,7 @@ export const builtinRules: Rule[] = [
   addNotNullWithoutDefaultRule,
   truncateTableRule,
   setTablespaceRule,
+  clusterTableRule,
   indexColumnsCountRule,
 ];
 
