@@ -21,12 +21,12 @@ const suggestion = (_statement: ParsedStatement): string => {
    of leaving the database in a partial state if a failure occurs.
 
 To skip this check, add above the comment:
-   -- prisma-strong-migrations-disable-next-line disable_transaction_warning
+   -- prisma-strong-migrations-disable-next-line disableTransactionWarning
 `.trim();
 };
 
 export const disableTransactionWarningRule: Rule = {
-  name: "disable_transaction_warning",
+  name: "disableTransactionWarning",
   severity: "warning",
   description:
     "Migrations without transaction protection may leave the database in a partial state on failure",

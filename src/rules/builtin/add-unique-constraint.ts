@@ -25,12 +25,12 @@ const suggestion = (_statement: ParsedStatement): string => {
         UNIQUE USING INDEX "index_name";
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_unique_constraint
+   -- prisma-strong-migrations-disable-next-line addUniqueConstraint
 `.trim();
 };
 
 export const addUniqueConstraintRule: Rule = {
-  name: "add_unique_constraint",
+  name: "addUniqueConstraint",
   severity: "error",
   description: "Adding a unique constraint locks the table",
   detect,

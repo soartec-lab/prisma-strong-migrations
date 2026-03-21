@@ -6,7 +6,7 @@ This document explains the details of each rule detected by prisma-strong-migrat
 
 ## Dangerous Operations (Error)
 
-### SM001: remove_column
+### SM001: removeColumn
 
 **Removing a column**
 
@@ -34,13 +34,13 @@ ALTER TABLE "users" DROP COLUMN "name";
 #### How to Skip
 
 ```sql
--- prisma-strong-migrations-disable-next-line remove_column
+-- prisma-strong-migrations-disable-next-line removeColumn
 ALTER TABLE "users" DROP COLUMN "name";
 ```
 
 ---
 
-### SM002: rename_column
+### SM002: renameColumn
 
 **Renaming a column**
 
@@ -66,7 +66,7 @@ ALTER TABLE "users" RENAME COLUMN "name" TO "full_name";
 
 ---
 
-### SM003: rename_table
+### SM003: renameTable
 
 **Renaming a table**
 
@@ -92,7 +92,7 @@ ALTER TABLE "users" RENAME TO "customers";
 
 ---
 
-### SM004: change_column_type
+### SM004: changeColumnType
 
 **Changing column type**
 
@@ -130,7 +130,7 @@ The following changes can be done safely without table rewrite:
 
 ---
 
-### SM005: add_index
+### SM005: addIndex
 
 **Adding index without CONCURRENTLY**
 
@@ -171,7 +171,7 @@ CREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");
 
 ---
 
-### SM006: remove_index
+### SM006: removeIndex
 
 **Removing index without CONCURRENTLY**
 
@@ -193,7 +193,7 @@ DROP INDEX CONCURRENTLY "users_email_idx";
 
 ---
 
-### SM007: add_foreign_key
+### SM007: addForeignKey
 
 **Adding foreign key constraint (without NOT VALID)**
 
@@ -230,7 +230,7 @@ VALIDATE CONSTRAINT "posts_user_id_fkey";
 
 ---
 
-### SM008: add_check_constraint
+### SM008: addCheckConstraint
 
 **Adding CHECK constraint (without NOT VALID)**
 
@@ -267,7 +267,7 @@ VALIDATE CONSTRAINT "products_price_check";
 
 ---
 
-### SM009: add_unique_constraint
+### SM009: addUniqueConstraint
 
 **Adding UNIQUE constraint**
 
@@ -302,7 +302,7 @@ UNIQUE USING INDEX "users_email_idx";
 
 ---
 
-### SM010: add_exclusion_constraint
+### SM010: addExclusionConstraint
 
 **Adding EXCLUSION constraint**
 
@@ -330,7 +330,7 @@ There is currently no safe approach. Consider:
 
 ---
 
-### SM011: set_not_null
+### SM011: setNotNull
 
 **Setting NOT NULL constraint**
 
@@ -366,7 +366,7 @@ ALTER TABLE "users" DROP CONSTRAINT "users_email_not_null";
 
 ---
 
-### SM012: add_json_column
+### SM012: addJsonColumn
 
 **Adding json type column**
 
@@ -400,7 +400,7 @@ model User {
 
 ---
 
-### SM013: add_volatile_default
+### SM013: addVolatileDefault
 
 **Adding column with volatile default value**
 
@@ -437,7 +437,7 @@ UPDATE "users" SET "uuid" = gen_random_uuid() WHERE "uuid" IS NULL;
 
 ---
 
-### SM014: add_auto_increment
+### SM014: addAutoIncrement
 
 **Adding auto-increment column**
 
@@ -456,11 +456,11 @@ ALTER TABLE "users" ADD COLUMN "id" BIGSERIAL;
 
 #### Safe Approach
 
-Create a new table and migrate data (similar procedure to SM003: rename_table).
+Create a new table and migrate data (similar procedure to SM003: renameTable).
 
 ---
 
-### SM015: add_stored_generated
+### SM015: addStoredGenerated
 
 **Adding STORED generated column**
 
@@ -484,7 +484,7 @@ GENERATED ALWAYS AS (first_name || ' ' || last_name) STORED;
 
 ---
 
-### SM016: rename_schema
+### SM016: renameSchema
 
 **Renaming a schema**
 
@@ -533,7 +533,7 @@ CREATE TABLE "users" (...);
 
 ---
 
-### drop_table
+### dropTable
 
 **Dropping a table**
 
@@ -559,13 +559,13 @@ DROP TABLE "users";
 #### How to Skip
 
 ```sql
--- prisma-strong-migrations-disable-next-line drop_table
+-- prisma-strong-migrations-disable-next-line dropTable
 DROP TABLE "users";
 ```
 
 ---
 
-### disable_transaction_warning
+### disableTransactionWarning
 
 **Migration running without transaction protection**
 
@@ -593,13 +593,13 @@ CREATE INDEX CONCURRENTLY "users_email_idx" ON "users"("email");
 #### How to Skip
 
 ```sql
--- prisma-strong-migrations-disable-next-line disable_transaction_warning
+-- prisma-strong-migrations-disable-next-line disableTransactionWarning
 -- prisma-migrate-disable-next-transaction
 ```
 
 ---
 
-### add_not_null_without_default
+### addNotNullWithoutDefault
 
 **Adding a NOT NULL column without a default value**
 
@@ -633,7 +633,7 @@ Alternatively, add `@default(...)` to the Prisma schema before generating the mi
 #### How to Skip
 
 ```sql
--- prisma-strong-migrations-disable-next-line add_not_null_without_default
+-- prisma-strong-migrations-disable-next-line addNotNullWithoutDefault
 ALTER TABLE "users" ADD COLUMN "status" text NOT NULL;
 ```
 
@@ -641,7 +641,7 @@ ALTER TABLE "users" ADD COLUMN "status" text NOT NULL;
 
 ## Best Practices (Warning)
 
-### SM101: index_columns_count
+### SM101: indexColumnsCount
 
 **Non-unique index with 4+ columns**
 
@@ -781,8 +781,8 @@ In `prisma-strong-migrations.config.js`:
 ```javascript
 module.exports = {
   disabledRules: [
-    "add_json_column", // We use json intentionally
-    "index_columns_count", // We have specific query patterns
+    "addJsonColumn", // We use json intentionally
+    "indexColumnsCount", // We have specific query patterns
   ],
 };
 ```
@@ -792,10 +792,10 @@ module.exports = {
 ```javascript
 module.exports = {
   rules: {
-    add_json_column: {
+    addJsonColumn: {
       severity: "error", // Upgrade from warning to error
     },
-    remove_column: {
+    removeColumn: {
       severity: "warning", // Downgrade from error to warning
     },
   },

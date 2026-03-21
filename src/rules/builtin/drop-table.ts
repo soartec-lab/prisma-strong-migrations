@@ -21,12 +21,12 @@ const suggestion = (statement: ParsedStatement): string => {
    4. Then apply this migration
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line drop_table
+   -- prisma-strong-migrations-disable-next-line dropTable
 `.trim();
 };
 
 export const dropTableRule: Rule = {
-  name: "drop_table",
+  name: "dropTable",
   severity: "error",
   description: "Dropping a table will permanently delete all data and may cause application errors",
   detect,

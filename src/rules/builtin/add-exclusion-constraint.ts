@@ -23,12 +23,12 @@ const suggestion = (_statement: ParsedStatement): string => {
    3. If the constraint is required, plan for a maintenance window
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_exclusion_constraint
+   -- prisma-strong-migrations-disable-next-line addExclusionConstraint
 `.trim();
 };
 
 export const addExclusionConstraintRule: Rule = {
-  name: "add_exclusion_constraint",
+  name: "addExclusionConstraint",
   severity: "error",
   description: "Adding an exclusion constraint locks the table",
   detect,

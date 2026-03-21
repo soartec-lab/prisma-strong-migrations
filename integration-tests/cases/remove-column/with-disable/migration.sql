@@ -1,2 +1,2 @@
--- prisma-strong-migrations-disable-next-line remove_column
+-- prisma-strong-migrations-disable-next-line removeColumn
 ALTER TABLE "users" DROP COLUMN "name";

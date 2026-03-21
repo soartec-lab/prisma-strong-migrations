@@ -31,12 +31,12 @@ const suggestion = (_statement: ParsedStatement): string => {
    - Keep this migration file separate — ideally one statement only.
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_index
+   -- prisma-strong-migrations-disable-next-line addIndex
 `.trim();
 };
 
 export const addIndexRule: Rule = {
-  name: "add_index",
+  name: "addIndex",
   severity: "error",
   description: "Adding an index without CONCURRENTLY locks the table",
   detect,

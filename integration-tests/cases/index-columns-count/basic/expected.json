@@ -1,6 +1,6 @@
 {
   "results": [
-    { "ruleName": "add_index", "line": 1 },
-    { "ruleName": "index_columns_count", "line": 1 }
+    { "ruleName": "addIndex", "line": 1 },
+    { "ruleName": "indexColumnsCount", "line": 1 }
   ]
 }

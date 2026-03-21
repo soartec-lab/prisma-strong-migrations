@@ -22,12 +22,12 @@ const suggestion = (statement: ParsedStatement): string => {
 📚 More info: https://github.com/prisma/prisma/issues/16821
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line remove_column
+   -- prisma-strong-migrations-disable-next-line removeColumn
 `.trim();
 };
 
 export const removeColumnRule: Rule = {
-  name: "remove_column",
+  name: "removeColumn",
   severity: "error",
   description: "Removing a column may cause application errors",
   detect,

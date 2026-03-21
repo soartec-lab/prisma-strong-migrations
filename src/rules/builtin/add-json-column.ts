@@ -25,12 +25,12 @@ const suggestion = (_statement: ParsedStatement): string => {
 Replace json with jsonb in your migration.
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_json_column
+   -- prisma-strong-migrations-disable-next-line addJsonColumn
 `.trim();
 };
 
 export const addJsonColumnRule: Rule = {
-  name: "add_json_column",
+  name: "addJsonColumn",
   severity: "error",
   description: "Adding a json column is not recommended; use jsonb instead",
   detect,

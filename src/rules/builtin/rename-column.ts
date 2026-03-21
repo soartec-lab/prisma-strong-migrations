@@ -22,12 +22,12 @@ const suggestion = (statement: ParsedStatement): string => {
    6. Then drop the old column '${statement.column}'
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line rename_column
+   -- prisma-strong-migrations-disable-next-line renameColumn
 `.trim();
 };
 
 export const renameColumnRule: Rule = {
-  name: "rename_column",
+  name: "renameColumn",
   severity: "error",
   description: "Renaming a column may cause errors in running application",
   detect,

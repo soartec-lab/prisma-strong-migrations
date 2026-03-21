@@ -25,12 +25,12 @@ const suggestion = (statement: ParsedStatement): string => {
       ALTER TABLE "${statement.table}" DROP CONSTRAINT "${statement.table}_${statement.column}_not_null";
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line set_not_null
+   -- prisma-strong-migrations-disable-next-line setNotNull
 `.trim();
 };
 
 export const setNotNullRule: Rule = {
-  name: "set_not_null",
+  name: "setNotNull",
   severity: "error",
   description: "Setting NOT NULL on a column locks the table",
   detect,

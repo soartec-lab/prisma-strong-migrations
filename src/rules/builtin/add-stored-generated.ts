@@ -23,12 +23,12 @@ const suggestion = (_statement: ParsedStatement): string => {
    3. Consider using a virtual/computed column approach at the application level instead
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_stored_generated
+   -- prisma-strong-migrations-disable-next-line addStoredGenerated
 `.trim();
 };
 
 export const addStoredGeneratedRule: Rule = {
-  name: "add_stored_generated",
+  name: "addStoredGenerated",
   severity: "error",
   description: "Adding a stored generated column locks the table",
   detect,

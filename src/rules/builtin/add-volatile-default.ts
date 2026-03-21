@@ -26,12 +26,12 @@ const suggestion = (_statement: ParsedStatement): string => {
       ALTER TABLE "table_name" ALTER COLUMN "column_name" SET DEFAULT volatile_function();
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_volatile_default
+   -- prisma-strong-migrations-disable-next-line addVolatileDefault
 `.trim();
 };
 
 export const addVolatileDefaultRule: Rule = {
-  name: "add_volatile_default",
+  name: "addVolatileDefault",
   severity: "error",
   description: "Adding a column with a volatile default value may cause issues",
   detect,

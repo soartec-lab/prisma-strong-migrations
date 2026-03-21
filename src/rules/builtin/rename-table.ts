@@ -22,12 +22,12 @@ const suggestion = (statement: ParsedStatement): string => {
    6. Then drop the old table
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line rename_table
+   -- prisma-strong-migrations-disable-next-line renameTable
 `.trim();
 };
 
 export const renameTableRule: Rule = {
-  name: "rename_table",
+  name: "renameTable",
   severity: "error",
   description: "Renaming a table may cause errors in running application",
   detect,

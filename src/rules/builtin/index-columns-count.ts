@@ -23,12 +23,12 @@ const suggestion = (_statement: ParsedStatement): string => {
    3. Use partial indexes to index only a subset of rows
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line index_columns_count
+   -- prisma-strong-migrations-disable-next-line indexColumnsCount
 `.trim();
 };
 
 export const indexColumnsCountRule: Rule = {
-  name: "index_columns_count",
+  name: "indexColumnsCount",
   severity: "warning",
   description: "Index with too many columns may impact write performance",
   detect,

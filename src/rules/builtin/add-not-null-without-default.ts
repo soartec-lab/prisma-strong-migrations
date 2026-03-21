@@ -30,12 +30,12 @@ const suggestion = (statement: ParsedStatement): string => {
    then remove it after deploying.
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_not_null_without_default
+   -- prisma-strong-migrations-disable-next-line addNotNullWithoutDefault
 `.trim();
 };
 
 export const addNotNullWithoutDefaultRule: Rule = {
-  name: "add_not_null_without_default",
+  name: "addNotNullWithoutDefault",
   severity: "warning",
   description:
     "Adding a NOT NULL column without a default value will fail on tables with existing rows",

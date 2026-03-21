@@ -1,1 +1,1 @@
-{ "results": [{ "ruleName": "add_unique_constraint", "line": 1 }] }
+{ "results": [{ "ruleName": "addUniqueConstraint", "line": 1 }] }

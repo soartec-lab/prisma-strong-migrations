@@ -22,12 +22,12 @@ const suggestion = (statement: ParsedStatement): string => {
    6. Then drop the old column
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line change_column_type
+   -- prisma-strong-migrations-disable-next-line changeColumnType
 `.trim();
 };
 
 export const changeColumnTypeRule: Rule = {
-  name: "change_column_type",
+  name: "changeColumnType",
   severity: "error",
   description: "Changing a column type may cause application errors",
   detect,

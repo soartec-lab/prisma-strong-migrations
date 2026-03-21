@@ -28,14 +28,14 @@ describe("check", () => {
     expect(results).toEqual([]);
   });
 
-  it("should detect remove_column violation", async () => {
+  it("should detect removeColumn violation", async () => {
     const results = await check({
       sql: 'ALTER TABLE "users" DROP COLUMN "name";',
       config: baseConfig,
       migrationPath: "migration.sql",
     });
     expect(results).toHaveLength(1);
-    expect(results[0].rule.name).toBe("remove_column");
+    expect(results[0].rule.name).toBe("removeColumn");
     expect(results[0].rule.severity).toBe("error");
     expect(results[0].statement.table).toBe("users");
     expect(results[0].statement.column).toBe("name");
@@ -48,13 +48,13 @@ describe("check", () => {
     `;
     const results = await check({ sql, config: baseConfig, migrationPath: "migration.sql" });
     expect(results).toHaveLength(2);
-    expect(results.every((r) => r.rule.name === "remove_column")).toBe(true);
+    expect(results.every((r) => r.rule.name === "removeColumn")).toBe(true);
   });
 
   it("should skip globally disabled rules", async () => {
     const results = await check({
       sql: 'ALTER TABLE "users" DROP COLUMN "name";',
-      config: { ...baseConfig, disabledRules: ["remove_column"] },
+      config: { ...baseConfig, disabledRules: ["removeColumn"] },
       migrationPath: "migration.sql",
     });
     expect(results).toEqual([]);
@@ -63,7 +63,7 @@ describe("check", () => {
   it("should not skip rules not in disabledRules", async () => {
     const results = await check({
       sql: 'ALTER TABLE "users" DROP COLUMN "name";',
-      config: { ...baseConfig, disabledRules: ["rename_column"] },
+      config: { ...baseConfig, disabledRules: ["renameColumn"] },
       migrationPath: "migration.sql",
     });
     expect(results).toHaveLength(1);
@@ -71,7 +71,7 @@ describe("check", () => {
 
   it("should handle disable-next-line comment for specific rule", async () => {
     const sql = `
--- prisma-strong-migrations-disable-next-line remove_column
+-- prisma-strong-migrations-disable-next-line removeColumn
 ALTER TABLE "users" DROP COLUMN "name";
     `;
     const results = await check({ sql, config: baseConfig, migrationPath: "migration.sql" });
@@ -89,12 +89,12 @@ ALTER TABLE "users" DROP COLUMN "name";
 
   it("should not skip rule when disable comment names different rule", async () => {
     const sql = `
--- prisma-strong-migrations-disable-next-line rename_column
+-- prisma-strong-migrations-disable-next-line renameColumn
 ALTER TABLE "users" DROP COLUMN "name";
     `;
     const results = await check({ sql, config: baseConfig, migrationPath: "migration.sql" });
     expect(results).toHaveLength(1);
-    expect(results[0].rule.name).toBe("remove_column");
+    expect(results[0].rule.name).toBe("removeColumn");
   });
 
   it("should include message and suggestion in results", async () => {
@@ -109,7 +109,7 @@ ALTER TABLE "users" DROP COLUMN "name";
 
   it("should apply custom rules", async () => {
     const customRule: Rule = {
-      name: "custom_test_rule",
+      name: "customTestRule",
       severity: "warning",
       description: "Custom test rule",
       detect: (stmt: ParsedStatement, _ctx: CheckContext) =>
@@ -124,17 +124,17 @@ ALTER TABLE "users" DROP COLUMN "name";
       migrationPath: "migration.sql",
     });
     expect(results).toHaveLength(1);
-    expect(results[0].rule.name).toBe("custom_test_rule");
+    expect(results[0].rule.name).toBe("customTestRule");
   });
 
-  it("should detect add_index without CONCURRENTLY", async () => {
+  it("should detect addIndex without CONCURRENTLY", async () => {
     const results = await check({
       sql: 'CREATE INDEX "users_email_idx" ON "users"("email");',
       config: baseConfig,
       migrationPath: "migration.sql",
     });
     expect(results).toHaveLength(1);
-    expect(results[0].rule.name).toBe("add_index");
+    expect(results[0].rule.name).toBe("addIndex");
   });
 
   it("should not flag CREATE INDEX CONCURRENTLY", async () => {

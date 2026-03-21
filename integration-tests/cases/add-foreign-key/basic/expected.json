@@ -1,1 +1,1 @@
-{ "results": [{ "ruleName": "add_foreign_key", "line": 1 }] }
+{ "results": [{ "ruleName": "addForeignKey", "line": 1 }] }

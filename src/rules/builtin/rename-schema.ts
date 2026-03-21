@@ -21,12 +21,12 @@ const suggestion = (_statement: ParsedStatement): string => {
    5. Then rename the schema
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line rename_schema
+   -- prisma-strong-migrations-disable-next-line renameSchema
 `.trim();
 };
 
 export const renameSchemaRule: Rule = {
-  name: "rename_schema",
+  name: "renameSchema",
   severity: "error",
   description: "Renaming a schema may cause errors in running application",
   detect,

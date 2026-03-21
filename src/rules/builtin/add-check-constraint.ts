@@ -26,12 +26,12 @@ const suggestion = (_statement: ParsedStatement): string => {
       ALTER TABLE "table_name" VALIDATE CONSTRAINT "constraint_name";
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_check_constraint
+   -- prisma-strong-migrations-disable-next-line addCheckConstraint
 `.trim();
 };
 
 export const addCheckConstraintRule: Rule = {
-  name: "add_check_constraint",
+  name: "addCheckConstraint",
   severity: "error",
   description: "Adding a check constraint without NOT VALID locks the table",
   detect,

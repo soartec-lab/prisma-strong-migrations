@@ -26,12 +26,12 @@ const suggestion = (_statement: ParsedStatement): string => {
       ALTER TABLE "table_name" VALIDATE CONSTRAINT "constraint_name";
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_foreign_key
+   -- prisma-strong-migrations-disable-next-line addForeignKey
 `.trim();
 };
 
 export const addForeignKeyRule: Rule = {
-  name: "add_foreign_key",
+  name: "addForeignKey",
   severity: "error",
   description: "Adding a foreign key without NOT VALID locks the table",
   detect,

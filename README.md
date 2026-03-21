@@ -42,7 +42,7 @@ $ npx prisma-strong-migrations check
 📚 More info: https://github.com/xxx/prisma-strong-migrations#removing-a-column
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line remove_column
+   -- prisma-strong-migrations-disable-next-line removeColumn
 
 Found 1 issue (1 error, 0 warnings)
 ```
@@ -167,7 +167,7 @@ ALTER TABLE "users" DROP COLUMN "name";
 4. Then apply this migration with a disable comment:
 
 ```sql
--- prisma-strong-migrations-disable-next-line remove_column
+-- prisma-strong-migrations-disable-next-line removeColumn
 -- Reason: All references removed in PR #123
 ALTER TABLE "users" DROP COLUMN "name";
 ```
@@ -590,7 +590,7 @@ DROP TABLE "users";
 4. Then apply this migration with a disable comment:
 
 ```sql
--- prisma-strong-migrations-disable-next-line drop_table
+-- prisma-strong-migrations-disable-next-line dropTable
 -- Reason: Model removed in PR #456, all references cleaned up
 DROP TABLE "users";
 ```
@@ -673,7 +673,7 @@ CREATE INDEX CONCURRENTLY "users_idx" ON "users"("d", "b");
 If you've reviewed the warning and want to proceed anyway, add a disable comment:
 
 ```sql
--- prisma-strong-migrations-disable-next-line remove_column
+-- prisma-strong-migrations-disable-next-line removeColumn
 -- Reason: Column deprecated, no references found
 ALTER TABLE "users" DROP COLUMN "name";
 ```
@@ -681,7 +681,7 @@ ALTER TABLE "users" DROP COLUMN "name";
 ### Skip multiple rules
 
 ```sql
--- prisma-strong-migrations-disable-next-line remove_column rename_column
+-- prisma-strong-migrations-disable-next-line removeColumn renameColumn
 ALTER TABLE "users" DROP COLUMN "name";
 ```
 
@@ -699,7 +699,7 @@ Create `prisma-strong-migrations.config.js` in your project root:
 ```javascript
 module.exports = {
   // Disable specific rules globally
-  disabledRules: ["index_columns_count"],
+  disabledRules: ["indexColumnsCount"],
 
   // Skip specific migrations
   ignoreMigrations: ["20240101_initial"],

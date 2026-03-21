@@ -30,12 +30,12 @@ const suggestion = (_statement: ParsedStatement): string => {
         SET DEFAULT nextval('"seq_name"');
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line add_auto_increment
+   -- prisma-strong-migrations-disable-next-line addAutoIncrement
 `.trim();
 };
 
 export const addAutoIncrementRule: Rule = {
-  name: "add_auto_increment",
+  name: "addAutoIncrement",
   severity: "error",
   description: "Adding a column with serial type locks the table",
   detect,

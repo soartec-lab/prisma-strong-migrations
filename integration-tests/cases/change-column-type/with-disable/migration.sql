@@ -1,2 +1,2 @@
--- prisma-strong-migrations-disable-next-line change_column_type
+-- prisma-strong-migrations-disable-next-line changeColumnType
 ALTER TABLE "users" ALTER COLUMN "age" TYPE bigint;

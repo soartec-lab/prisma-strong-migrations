@@ -19,12 +19,12 @@ const suggestion = (_statement: ParsedStatement): string => {
 Note: CONCURRENTLY cannot be used inside a transaction block.
 
 To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line remove_index
+   -- prisma-strong-migrations-disable-next-line removeIndex
 `.trim();
 };
 
 export const removeIndexRule: Rule = {
-  name: "remove_index",
+  name: "removeIndex",
   severity: "error",
   description: "Dropping an index without CONCURRENTLY locks the table",
   detect,
