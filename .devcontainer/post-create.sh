@@ -16,7 +16,8 @@ ln -sf /home/node/bin/git-secrets /home/node/.local/bin/git-secrets
 if [ -f "package.json" ]; then
     echo "📦 Installing dependencies..."
     vp install || {
-        echo "⚠️  vp install failed, retrying..."
+        echo "⚠️  vp install failed, retrying with clean node_modules..."
+        rm -rf node_modules
         vp install
     }
 fi
