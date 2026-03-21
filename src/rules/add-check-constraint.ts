@@ -37,6 +37,7 @@ const fix = (statement: ParsedStatement): FixResult => {
       `${rawWithoutSemi} NOT VALID`,
       `ALTER TABLE "${statement.table}" VALIDATE CONSTRAINT "${statement.constraintName}"`,
     ],
+    requiresDisableTransaction: false,
   };
 };
 

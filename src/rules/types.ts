@@ -13,7 +13,7 @@ export interface FixResult {
   /** SQL statements replacing the original (without trailing semicolons) */
   statements: string[];
   /** If true, the file needs a -- prisma-migrate-disable-next-transaction header */
-  requiresDisableTransaction?: boolean;
+  requiresDisableTransaction: boolean;
 }
 
 export interface Rule {

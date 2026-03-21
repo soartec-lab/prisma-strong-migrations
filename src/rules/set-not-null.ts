@@ -39,6 +39,7 @@ const fix = (statement: ParsedStatement): FixResult => {
       rawWithoutSemi,
       `ALTER TABLE "${statement.table}" DROP CONSTRAINT "${constraintName}"`,
     ],
+    requiresDisableTransaction: false,
   };
 };
 

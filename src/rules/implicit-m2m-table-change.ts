@@ -3,12 +3,8 @@ import type { CheckContext, Rule } from "./types";
 
 const IMPLICIT_M2M_PATTERN = /^_[A-Z][a-zA-Z]*To[A-Z][a-zA-Z]*$/;
 
-const isImplicitM2mTable = (table: string | undefined): boolean => {
-  return table !== undefined && IMPLICIT_M2M_PATTERN.test(table);
-};
-
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
-  if (!isImplicitM2mTable(statement.table)) return false;
+  if (!statement.table || !IMPLICIT_M2M_PATTERN.test(statement.table)) return false;
   return (
     statement.type === "alterTable" ||
     statement.type === "dropTable" ||
