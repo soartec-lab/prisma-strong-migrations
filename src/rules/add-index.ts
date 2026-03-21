@@ -1,5 +1,5 @@
 import type { ParsedStatement } from "../../parser/types";
-import type { CheckContext, Rule } from "./types";
+import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "createIndex" && statement.concurrently === false;
@@ -35,6 +35,16 @@ To skip this check, add above the statement:
 `.trim();
 };
 
+const fix = (statement: ParsedStatement): FixResult => {
+  const rawWithoutSemi = statement.raw.replace(/;\s*$/, "");
+  // Insert CONCURRENTLY after CREATE [UNIQUE] INDEX
+  const fixed = rawWithoutSemi.replace(
+    /\bCREATE\s+(UNIQUE\s+)?INDEX\s+/i,
+    (match) => match.trimEnd() + " CONCURRENTLY ",
+  );
+  return { statements: [fixed], requiresDisableTransaction: true };
+};
+
 export const addIndexRule: Rule = {
   name: "addIndex",
   severity: "error",
@@ -42,4 +52,5 @@ export const addIndexRule: Rule = {
   detect,
   message,
   suggestion,
+  fix,
 };

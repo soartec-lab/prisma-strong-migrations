@@ -1,5 +1,5 @@
 import type { ParsedStatement } from "../../parser/types";
-import type { CheckContext, Rule } from "./types";
+import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "dropIndex" && statement.concurrently === false;
@@ -23,6 +23,12 @@ To skip this check, add above the statement:
 `.trim();
 };
 
+const fix = (statement: ParsedStatement): FixResult => {
+  const rawWithoutSemi = statement.raw.replace(/;\s*$/, "");
+  const fixed = rawWithoutSemi.replace(/\bDROP\s+INDEX\s+/i, "DROP INDEX CONCURRENTLY ");
+  return { statements: [fixed], requiresDisableTransaction: true };
+};
+
 export const removeIndexRule: Rule = {
   name: "removeIndex",
   severity: "error",
@@ -30,4 +36,5 @@ export const removeIndexRule: Rule = {
   detect,
   message,
   suggestion,
+  fix,
 };

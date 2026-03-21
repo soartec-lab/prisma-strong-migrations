@@ -1,5 +1,5 @@
 import type { ParsedStatement } from "../../parser/types";
-import type { CheckContext, Rule } from "./types";
+import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
@@ -29,6 +29,12 @@ To skip this check, add above the statement:
 `.trim();
 };
 
+const fix = (statement: ParsedStatement): FixResult => {
+  const rawWithoutSemi = statement.raw.replace(/;\s*$/, "");
+  const fixed = rawWithoutSemi.replace(/\bjson\b/i, "jsonb");
+  return { statements: [fixed] };
+};
+
 export const addJsonColumnRule: Rule = {
   name: "addJsonColumn",
   severity: "error",
@@ -36,4 +42,5 @@ export const addJsonColumnRule: Rule = {
   detect,
   message,
   suggestion,
+  fix,
 };
