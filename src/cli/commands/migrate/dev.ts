@@ -5,7 +5,12 @@ import { resolve } from "node:path";
 import { loadConfig } from "../../../config/loader";
 import { loadCustomRules } from "../../../rules/loader";
 import { findMigrationFiles } from "../../find-migration-files";
-import { runCheckAndReport, runPrisma } from "../../prisma-runner";
+import {
+  getAppliedMigrationNames,
+  migrationNameFromPath,
+  runCheckAndReport,
+  runPrisma,
+} from "../../prisma-runner";
 
 export function registerDevCommand(migrate: Command): void {
   migrate
@@ -23,8 +28,6 @@ export function registerDevCommand(migrate: Command): void {
       }
       const migrationsDir = resolve(config.migrationsDir ?? "./prisma/migrations");
 
-      const existingFiles = new Set(await findMigrationFiles(migrationsDir));
-
       const createOnlyArgs = ["migrate", "dev", "--create-only"];
       if (options.name) createOnlyArgs.push("--name", options.name);
       if (options.schema) createOnlyArgs.push("--schema", options.schema);
@@ -32,14 +35,15 @@ export function registerDevCommand(migrate: Command): void {
       const createStatus = runPrisma([...createOnlyArgs, ...cmd.args]);
       if (createStatus !== 0) process.exit(createStatus);
 
-      const newFiles = (await findMigrationFiles(migrationsDir)).filter(
-        (f) => !existingFiles.has(f),
-      );
+      // Determine pending migrations: all disk files minus those already applied in DB.
+      const appliedNames = getAppliedMigrationNames(options.schema);
+      const allFiles = await findMigrationFiles(migrationsDir);
+      const pendingFiles = allFiles.filter((f) => !appliedNames.has(migrationNameFromPath(f)));
 
-      // Only auto-delete empty migrations (Prisma generates these when a pending
+      // Auto-delete empty pending files (Prisma generates these when a pending
       // migration already covers the schema diff). Non-empty files are kept so
       // the user can edit and fix them.
-      const emptyFiles = newFiles.filter((f) =>
+      const emptyFiles = pendingFiles.filter((f) =>
         readFileSync(f, "utf-8").trim().startsWith("-- This is an empty migration"),
       );
       const cleanup = () => {
@@ -48,10 +52,17 @@ export function registerDevCommand(migrate: Command): void {
         }
       };
       process.on("exit", cleanup);
-      process.on("SIGINT", () => { cleanup(); process.exit(130); });
-      process.on("SIGTERM", () => { cleanup(); process.exit(143); });
+      process.on("SIGINT", () => {
+        cleanup();
+        process.exit(130);
+      });
+      process.on("SIGTERM", () => {
+        cleanup();
+        process.exit(143);
+      });
 
-      const hasErrors = await runCheckAndReport(migrationsDir, config);
+      const checkFiles = pendingFiles.filter((f) => !emptyFiles.includes(f));
+      const hasErrors = await runCheckAndReport(migrationsDir, config, checkFiles);
 
       if (hasErrors) {
         console.error(
