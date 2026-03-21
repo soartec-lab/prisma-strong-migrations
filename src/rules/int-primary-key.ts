@@ -36,7 +36,7 @@ To skip this check, add above the statement:
 
 export const intPrimaryKeyRule: Rule = {
   name: "intPrimaryKey",
-  severity: "warning",
+  severity: "error",
   description:
     "Using SERIAL (32-bit) for a primary key risks exhausting the limit on large-scale services",
   detect,

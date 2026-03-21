@@ -90,8 +90,8 @@ describe("intPrimaryKeyRule", () => {
   });
 
   describe("rule metadata", () => {
-    it("should have warning severity", () => {
-      expect(intPrimaryKeyRule.severity).toBe("warning");
+    it("should have error severity", () => {
+      expect(intPrimaryKeyRule.severity).toBe("error");
     });
 
     it("should have correct name", () => {
