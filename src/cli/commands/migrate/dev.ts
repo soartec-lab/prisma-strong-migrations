@@ -1,4 +1,6 @@
 import { Command } from "commander";
+import { rm } from "node:fs/promises";
+import { dirname } from "node:path";
 import { resolve } from "node:path";
 import { loadConfig } from "../../../config/loader";
 import { loadCustomRules } from "../../../rules/loader";
@@ -21,6 +23,8 @@ export function registerDevCommand(migrate: Command): void {
       }
       const migrationsDir = resolve(config.migrationsDir ?? "./prisma/migrations");
 
+      const existingFiles = new Set(await findMigrationFiles(migrationsDir));
+
       const createOnlyArgs = ["migrate", "dev", "--create-only"];
       if (options.name) createOnlyArgs.push("--name", options.name);
       if (options.schema) createOnlyArgs.push("--schema", options.schema);
@@ -28,11 +32,18 @@ export function registerDevCommand(migrate: Command): void {
       const createStatus = runPrisma([...createOnlyArgs, ...cmd.args]);
       if (createStatus !== 0) process.exit(createStatus);
 
+      const newFiles = (await findMigrationFiles(migrationsDir)).filter(
+        (f) => !existingFiles.has(f),
+      );
+
       const hasErrors = await runCheckAndReport(migrationsDir, config);
 
       if (hasErrors) {
+        for (const file of newFiles) {
+          await rm(dirname(file), { recursive: true, force: true });
+        }
         console.error(
-          "\n❌ Migration check failed. Review the migration files and delete them if needed, then try again.",
+          "\n❌ Migration check failed. The generated migration files have been deleted. Fix the issues and try again.",
         );
         process.exit(1);
       }
