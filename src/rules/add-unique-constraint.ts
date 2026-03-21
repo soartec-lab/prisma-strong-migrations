@@ -1,5 +1,5 @@
 import type { ParsedStatement } from "../../parser/types";
-import type { CheckContext, Rule } from "./types";
+import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
@@ -29,6 +29,20 @@ To skip this check, add above the statement:
 `.trim();
 };
 
+const fix = (statement: ParsedStatement): FixResult => {
+  const indexName = `${statement.constraintName}_idx`;
+  // Extract column list from: ADD CONSTRAINT "name" UNIQUE ("col1", "col2")
+  const columnsMatch = statement.raw.match(/UNIQUE\s*\(([^)]+)\)/i);
+  const columns = columnsMatch ? columnsMatch[1].trim() : "";
+  return {
+    statements: [
+      `CREATE UNIQUE INDEX CONCURRENTLY "${indexName}" ON "${statement.table}"(${columns})`,
+      `ALTER TABLE "${statement.table}" ADD CONSTRAINT "${statement.constraintName}" UNIQUE USING INDEX "${indexName}"`,
+    ],
+    requiresDisableTransaction: true,
+  };
+};
+
 export const addUniqueConstraintRule: Rule = {
   name: "addUniqueConstraint",
   severity: "error",
@@ -36,4 +50,5 @@ export const addUniqueConstraintRule: Rule = {
   detect,
   message,
   suggestion,
+  fix,
 };

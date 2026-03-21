@@ -1,5 +1,5 @@
 import type { ParsedStatement } from "../../parser/types";
-import type { CheckContext, Rule } from "./types";
+import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return (
@@ -30,6 +30,16 @@ To skip this check, add above the statement:
 `.trim();
 };
 
+const fix = (statement: ParsedStatement): FixResult => {
+  const rawWithoutSemi = statement.raw.replace(/;\s*$/, "");
+  return {
+    statements: [
+      `${rawWithoutSemi} NOT VALID`,
+      `ALTER TABLE "${statement.table}" VALIDATE CONSTRAINT "${statement.constraintName}"`,
+    ],
+  };
+};
+
 export const addForeignKeyRule: Rule = {
   name: "addForeignKey",
   severity: "error",
@@ -37,4 +47,5 @@ export const addForeignKeyRule: Rule = {
   detect,
   message,
   suggestion,
+  fix,
 };

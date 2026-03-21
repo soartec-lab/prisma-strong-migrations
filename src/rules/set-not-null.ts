@@ -1,5 +1,5 @@
 import type { ParsedStatement } from "../../parser/types";
-import type { CheckContext, Rule } from "./types";
+import type { CheckContext, FixResult, Rule } from "./types";
 
 const detect = (statement: ParsedStatement, _context: CheckContext): boolean => {
   return statement.type === "alterTable" && statement.action === "alterColumnSetNotNull";
@@ -29,6 +29,19 @@ To skip this check, add above the statement:
 `.trim();
 };
 
+const fix = (statement: ParsedStatement): FixResult => {
+  const constraintName = `${statement.table}_${statement.column}_not_null`;
+  const rawWithoutSemi = statement.raw.replace(/;\s*$/, "");
+  return {
+    statements: [
+      `ALTER TABLE "${statement.table}" ADD CONSTRAINT "${constraintName}" CHECK ("${statement.column}" IS NOT NULL) NOT VALID`,
+      `ALTER TABLE "${statement.table}" VALIDATE CONSTRAINT "${constraintName}"`,
+      rawWithoutSemi,
+      `ALTER TABLE "${statement.table}" DROP CONSTRAINT "${constraintName}"`,
+    ],
+  };
+};
+
 export const setNotNullRule: Rule = {
   name: "setNotNull",
   severity: "error",
@@ -36,4 +49,5 @@ export const setNotNullRule: Rule = {
   detect,
   message,
   suggestion,
+  fix,
 };
