@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { readdir, readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { check } from "./checker";
@@ -131,6 +133,119 @@ export default {
     const filePath = join(dir, `${name}.js`);
     await writeFile(filePath, template, "utf-8");
     console.log(`Created ${filePath}`);
+  });
+
+function findPrismaBin(): string {
+  const localPrisma = resolve(process.cwd(), "node_modules", ".bin", "prisma");
+  if (existsSync(localPrisma)) return localPrisma;
+  return "prisma";
+}
+
+async function runCheckAndReport(
+  migrationsDir: string,
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  filePaths?: string[],
+): Promise<boolean> {
+  const files = filePaths ?? (await findMigrationFiles(migrationsDir));
+  const allResults: CheckResult[] = [];
+
+  for (const filePath of files) {
+    const sql = await readFile(filePath, "utf-8");
+    const results = await check({ sql, config, migrationPath: filePath });
+    allResults.push(...results);
+  }
+
+  consoleReport(allResults);
+
+  const hasErrors = allResults.some((r) => r.rule.severity === "error");
+  const hasWarnings = allResults.some((r) => r.rule.severity === "warning");
+  const failOnWarning = config.ci?.failOnWarning ?? false;
+
+  return hasErrors || (failOnWarning && hasWarnings);
+}
+
+const migrate = program.command("migrate").description("Run Prisma migrations with safety checks");
+
+migrate
+  .command("deploy")
+  .description("Check all migrations then run prisma migrate deploy (CI-safe)")
+  .allowUnknownOption()
+  .option("-c, --config <path>", "path to config file")
+  .action(async (options, cmd: Command) => {
+    const config = await loadConfig(options.config);
+    if (config.customRulesDir) {
+      const customRules = await loadCustomRules(config.customRulesDir);
+      config.customRules = [...(config.customRules ?? []), ...customRules];
+    }
+    const migrationsDir = resolve(config.migrationsDir ?? "./prisma/migrations");
+
+    const hasErrors = await runCheckAndReport(migrationsDir, config);
+
+    if (hasErrors) {
+      console.error("\n❌ Migration check failed. prisma migrate deploy was NOT executed.");
+      process.exit(1);
+    }
+
+    const extraArgs = cmd.args;
+    const result = spawnSync(findPrismaBin(), ["migrate", "deploy", ...extraArgs], {
+      stdio: "inherit",
+    });
+    process.exit(result.status ?? 0);
+  });
+
+migrate
+  .command("dev")
+  .description("Create migration with --create-only, check it, then apply if safe")
+  .allowUnknownOption()
+  .option("-c, --config <path>", "path to config file")
+  .option("--name <name>", "name of the migration")
+  .option("--schema <path>", "path to prisma schema")
+  .action(async (options, cmd: Command) => {
+    const config = await loadConfig(options.config);
+    if (config.customRulesDir) {
+      const customRules = await loadCustomRules(config.customRulesDir);
+      config.customRules = [...(config.customRules ?? []), ...customRules];
+    }
+    const migrationsDir = resolve(config.migrationsDir ?? "./prisma/migrations");
+
+    const existingFiles = new Set(await findMigrationFiles(migrationsDir));
+
+    const createOnlyArgs = ["migrate", "dev", "--create-only"];
+    if (options.name) createOnlyArgs.push("--name", options.name);
+    if (options.schema) createOnlyArgs.push("--schema", options.schema);
+
+    const extraArgs = cmd.args;
+    const createResult = spawnSync(findPrismaBin(), [...createOnlyArgs, ...extraArgs], {
+      stdio: "inherit",
+    });
+    if (createResult.status !== 0) {
+      process.exit(createResult.status ?? 1);
+    }
+
+    const newFiles = (await findMigrationFiles(migrationsDir)).filter((f) => !existingFiles.has(f));
+
+    if (newFiles.length === 0) {
+      console.log("No new migrations created.");
+      process.exit(0);
+    }
+
+    const hasErrors = await runCheckAndReport(migrationsDir, config, newFiles);
+
+    if (hasErrors) {
+      console.error(
+        "\n❌ Migration check failed. Review the migration files and delete them if needed, then try again.",
+      );
+      process.exit(1);
+    }
+
+    const applyArgs = ["migrate", "dev"];
+    if (options.schema) applyArgs.push("--schema", options.schema);
+    applyArgs.push(...extraArgs);
+
+    const applyResult = spawnSync(findPrismaBin(), applyArgs, {
+      stdio: "inherit",
+    });
+    process.exit(applyResult.status ?? 0);
   });
 
 async function findMigrationFiles(dir: string): Promise<string[]> {
