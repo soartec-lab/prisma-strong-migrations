@@ -1479,28 +1479,13 @@ module.exports = {
 };
 ```
 
-### Changing Severity
-
-```javascript
-module.exports = {
-  rules: {
-    addJsonColumn: {
-      severity: "error", // Upgrade from warning to error
-    },
-    removeColumn: {
-      severity: "warning", // Downgrade from error to warning
-    },
-  },
-};
-```
-
 ### Ignoring Specific Migrations
 
 ```javascript
 module.exports = {
   ignoreMigrations: [
     "20240101_initial_migration", // Skip initial migration
-    "*_seed_*", // Skip all seed migrations
+    "seed", // Skip migrations containing "seed" in the path
   ],
 };
 ```
