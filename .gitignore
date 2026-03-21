@@ -15,3 +15,6 @@ coverage/
 # 環境変数
 .env
 example/.env
+
+# Claude Code ローカル設定
+.claude/settings.local.json
