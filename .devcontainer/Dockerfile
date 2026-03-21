@@ -7,7 +7,10 @@ RUN apt-get update && apt-get install -y \
     git \
     vim \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    sudo \
+    && rm -rf /var/lib/apt/lists/* \
+    && echo "node ALL=(root) NOPASSWD: /bin/chown" > /etc/sudoers.d/node \
+    && chmod 440 /etc/sudoers.d/node
 
 # Install git-secrets (requires root to write to /usr/local/bin)
 RUN git clone https://github.com/awslabs/git-secrets.git /tmp/git-secrets \

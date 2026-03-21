@@ -14,12 +14,14 @@ mkdir -p /home/node/bin
 ln -sf /usr/local/bin/git-secrets /home/node/bin/git-secrets
 
 # Install dependencies if package.json exists.
-# pnpm may fail on first run due to a symlink race condition; retry once if needed.
+# node_modules is a Docker named volume; ensure it is owned by the node user.
+# Then retry once with cleared contents if the first attempt fails.
 if [ -f "package.json" ]; then
     echo "📦 Installing dependencies..."
     vp install || {
         echo "⚠️  vp install failed, retrying with clean node_modules..."
-        rm -rf node_modules
+        # Cannot remove the mount point itself — clear contents instead.
+        find node_modules -mindepth 1 -delete 2>/dev/null || true
         vp install
     }
 fi
