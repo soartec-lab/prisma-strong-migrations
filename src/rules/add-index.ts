@@ -40,7 +40,7 @@ const fix = (statement: ParsedStatement): FixResult => {
   // Insert CONCURRENTLY after CREATE [UNIQUE] INDEX
   const fixed = rawWithoutSemi.replace(
     /\bCREATE\s+(UNIQUE\s+)?INDEX\s+/i,
-    (match) => match.trimEnd() + " CONCURRENTLY ",
+    (match: string) => match.trimEnd() + " CONCURRENTLY ",
   );
   return { statements: [fixed], requiresDisableTransaction: true };
 };
