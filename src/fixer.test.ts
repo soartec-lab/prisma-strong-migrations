@@ -11,7 +11,10 @@ import { addUniqueConstraintRule } from "./rules/add-unique-constraint";
 import { removeColumnRule } from "./rules/remove-column";
 import { parseSql } from "./parser/sql-parser";
 
-function makeResult(rule: Parameters<typeof applyFixes>[1][number]["rule"], sql: string): CheckResult {
+function makeResult(
+  rule: Parameters<typeof applyFixes>[1][number]["rule"],
+  sql: string,
+): CheckResult {
   const statements = parseSql(sql);
   const statement = statements[0];
   return {
@@ -143,10 +146,9 @@ describe("applyFixes", () => {
 
   describe("disable-transaction header deduplication", () => {
     it("adds header only once when multiple rules require it", () => {
-      const sql = [
-        `CREATE INDEX "idx_a" ON "T"("a");`,
-        `CREATE INDEX "idx_b" ON "T"("b");`,
-      ].join("\n");
+      const sql = [`CREATE INDEX "idx_a" ON "T"("a");`, `CREATE INDEX "idx_b" ON "T"("b");`].join(
+        "\n",
+      );
 
       const stmts = parseSql(sql);
       const results: CheckResult[] = stmts.map((stmt) => ({
