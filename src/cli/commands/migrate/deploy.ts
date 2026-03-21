@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { resolve } from "node:path";
 import { loadConfig } from "../../../config/loader";
 import { loadCustomRules } from "../../../rules/loader";
-import { runCheckAndReport, runPrisma } from "./prisma-runner";
+import { runCheckAndReport, runPrisma } from "../../prisma-runner";
 
 export function registerDeployCommand(migrate: Command): void {
   migrate
