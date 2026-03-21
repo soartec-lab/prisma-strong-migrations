@@ -31,6 +31,7 @@ import { mixedStatementsWithDisabledTransactionRule } from "./mixed-statements-w
 import { updateWithoutWhereRule } from "./update-without-where";
 import { deleteWithoutWhereRule } from "./delete-without-where";
 import { backfillInMigrationRule } from "./backfill-in-migration";
+import { enumValueRemovalRule } from "./enum-value-removal";
 
 export const builtinRules: Rule[] = [
   removeColumnRule,
@@ -64,6 +65,7 @@ export const builtinRules: Rule[] = [
   updateWithoutWhereRule,
   deleteWithoutWhereRule,
   backfillInMigrationRule,
+  enumValueRemovalRule,
   indexColumnsCountRule,
 ];
 
