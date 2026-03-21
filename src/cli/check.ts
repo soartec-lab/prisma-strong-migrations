@@ -6,7 +6,7 @@ import { consoleReport } from "../reporter/console-reporter";
 import { jsonReport } from "../reporter/json-reporter";
 import { loadConfig } from "../config/loader";
 import { loadCustomRules } from "../rules/loader";
-import { findMigrationFiles } from "../find-migration-files";
+import { findMigrationFiles } from "./find-migration-files";
 
 export function registerCheckCommand(program: Command): void {
   program

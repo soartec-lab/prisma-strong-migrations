@@ -5,7 +5,7 @@ import { resolve } from "node:path";
 import { check } from "../../checker";
 import { consoleReport } from "../../reporter/console-reporter";
 import { loadConfig } from "../../config/loader";
-import { findMigrationFiles } from "../../find-migration-files";
+import { findMigrationFiles } from "../find-migration-files";
 
 export function findPrismaBin(): string {
   const localPrisma = resolve(process.cwd(), "node_modules", ".bin", "prisma");
