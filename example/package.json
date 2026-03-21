@@ -1,9 +1,12 @@
 {
   "name": "writemate-example",
   "version": "0.1.0",
-  "description": "WriteMate - sample app for prisma-strong-migrations",
   "private": true,
+  "description": "WriteMate - sample app for prisma-strong-migrations",
   "type": "module",
+  "dependencies": {
+    "@prisma/client": "6.19.2"
+  },
   "devDependencies": {
     "prisma": "^6.0.0",
     "prisma-strong-migrations": "file:.."
