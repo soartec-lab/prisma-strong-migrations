@@ -359,12 +359,12 @@ Only implement `fix` when all of the following are true:
 
 #### Examples where `fix` should NOT be implemented
 
-| Pattern                                                                              | Reason                                          |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------- |
-| Requires app code changes (`removeColumn`, `renameColumn`, `dropTable`, etc.)        | SQL fix alone is not safe to execute            |
-| Requires human-supplied values (`updateWithoutWhere`, etc.)                          | Missing information cannot be inferred          |
+| Pattern                                                                                      | Reason                                      |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| Requires app code changes (`removeColumn`, `renameColumn`, `dropTable`, etc.)                | SQL fix alone is not safe to execute        |
+| Requires human-supplied values (`updateWithoutWhere`, etc.)                                  | Missing information cannot be inferred      |
 | Correct solution is a schema.prisma change (`intPrimaryKey`, `implicitM2mTableChange`, etc.) | Rewriting SQL does not solve the root cause |
-| Default value is context-dependent (`addNotNullWithoutDefault`, etc.)               | Appropriate value cannot be determined          |
+| Default value is context-dependent (`addNotNullWithoutDefault`, etc.)                        | Appropriate value cannot be determined      |
 
 #### Example `fix` implementation (auto-fixable rule)
 
@@ -385,15 +385,15 @@ fix: (stmt: ParsedStatement): FixResult => {
 
 #### Rules with auto-fix support
 
-| Rule                  | Fix behavior                                                                                    |
-| --------------------- | ----------------------------------------------------------------------------------------------- |
-| `addIndex`            | `CREATE INDEX` → `CREATE INDEX CONCURRENTLY` + disable-transaction header                      |
-| `removeIndex`         | `DROP INDEX` → `DROP INDEX CONCURRENTLY` + disable-transaction header                          |
-| `addForeignKey`       | Add `NOT VALID` + append `VALIDATE CONSTRAINT` statement                                        |
-| `addCheckConstraint`  | Add `NOT VALID` + append `VALIDATE CONSTRAINT` statement                                        |
-| `setNotNull`          | Expand into 4 statements: CHECK NOT VALID → VALIDATE → SET NOT NULL → DROP CONSTRAINT          |
-| `addUniqueConstraint` | Replace with `CREATE UNIQUE INDEX CONCURRENTLY` + `ADD CONSTRAINT USING INDEX` + header        |
-| `addJsonColumn`       | Replace `json` with `jsonb` in the raw SQL                                                      |
+| Rule                  | Fix behavior                                                                            |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `addIndex`            | `CREATE INDEX` → `CREATE INDEX CONCURRENTLY` + disable-transaction header               |
+| `removeIndex`         | `DROP INDEX` → `DROP INDEX CONCURRENTLY` + disable-transaction header                   |
+| `addForeignKey`       | Add `NOT VALID` + append `VALIDATE CONSTRAINT` statement                                |
+| `addCheckConstraint`  | Add `NOT VALID` + append `VALIDATE CONSTRAINT` statement                                |
+| `setNotNull`          | Expand into 4 statements: CHECK NOT VALID → VALIDATE → SET NOT NULL → DROP CONSTRAINT   |
+| `addUniqueConstraint` | Replace with `CREATE UNIQUE INDEX CONCURRENTLY` + `ADD CONSTRAINT USING INDEX` + header |
+| `addJsonColumn`       | Replace `json` with `jsonb` in the raw SQL                                              |
 
 See `.local-dev-docs/active/auto-fix-sql-proposal.md` for details.
 

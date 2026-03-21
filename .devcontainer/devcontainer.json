@@ -8,10 +8,7 @@
   },
   "customizations": {
     "vscode": {
-      "extensions": [
-        "vitest.explorer",
-        "anthropic.claude-code"
-      ],
+      "extensions": ["vitest.explorer", "anthropic.claude-code"],
       "settings": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
