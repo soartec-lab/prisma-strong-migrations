@@ -870,6 +870,56 @@ CREATE TABLE "users_backup" AS SELECT * FROM "users";
 
 ---
 
+### SM024: implicitM2mRelation
+
+**Prisma implicit M2M join table detected**
+
+#### Detection Pattern
+
+```sql
+CREATE TABLE "_CategoryToPost" (
+    "A" integer NOT NULL,
+    "B" integer NOT NULL
+);
+```
+
+#### Why It's a Warning
+
+- Prisma auto-generates and manages implicit M2M tables (`_XToY`) — columns are limited to `A` and `B` with no room for extra fields
+- The naming is opaque and makes the schema harder to understand
+- You cannot control indexes or add metadata (e.g. `assignedAt`) without converting to explicit M2M
+- Explicit M2M tables are clearer, more flexible, and follow the same model-first approach as the rest of the schema
+
+#### Safe Approach
+
+Convert to an explicit M2M relation in `schema.prisma`:
+
+```prisma
+model CategoryOnPost {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  assignedAt DateTime @default(now())
+
+  @@id([postId, categoryId])
+}
+```
+
+Then run: `npx prisma migrate dev`
+
+#### How to Skip
+
+```sql
+-- prisma-strong-migrations-disable-next-line implicitM2mRelation
+CREATE TABLE "_CategoryToPost" (
+    "A" integer NOT NULL,
+    "B" integer NOT NULL
+);
+```
+
+---
+
 ## Prisma-Specific Rules
 
 The following rules detect issues specific to how Prisma wraps migrations in transactions and how concurrent index operations interact with Prisma's migration runner.

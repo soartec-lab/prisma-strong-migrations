@@ -928,6 +928,37 @@ UPDATE "User" SET "role" = 'ADMIN' WHERE "role" = 'MEMBER';
 
 ---
 
+### Creating an implicit M2M join table
+
+Prisma generates `_XToY` tables for implicit M2M relations. These tables are limited to columns `A` and `B`, cannot hold extra fields, and use opaque naming. Explicit M2M models are clearer and more flexible.
+
+#### Bad
+
+```sql
+-- Prisma generates this for implicit M2M — columns A and B only
+CREATE TABLE "_CategoryToPost" (
+    "A" integer NOT NULL,
+    "B" integer NOT NULL
+);
+```
+
+#### Good
+
+```prisma
+-- ✅ Convert to explicit M2M in schema.prisma
+model CategoryOnPost {
+  post       Post     @relation(fields: [postId], references: [id])
+  postId     Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  assignedAt DateTime @default(now())
+
+  @@id([postId, categoryId])
+}
+```
+
+---
+
 ### Directly modifying an implicit M2M table
 
 Prisma auto-manages join tables named `_AToB`. Direct modifications break Prisma's relation management.

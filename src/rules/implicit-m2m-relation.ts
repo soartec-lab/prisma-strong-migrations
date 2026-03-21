@@ -54,8 +54,7 @@ To skip this check, add above the statement:
 export const implicitM2mRelationRule: Rule = {
   name: "implicitM2mRelation",
   severity: "warning",
-  description:
-    "Prisma implicit M2M join table detected — explicit M2M relation is recommended",
+  description: "Prisma implicit M2M join table detected — explicit M2M relation is recommended",
   detect,
   message,
   suggestion,
