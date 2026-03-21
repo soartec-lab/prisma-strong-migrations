@@ -1,8 +1,9 @@
 {
   "name": "prisma-strong-migrations",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspaces/prisma-strong-migrations",
+  "runServices": ["postgres"],
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
   },
@@ -10,21 +11,14 @@
     "vscode": {
       "extensions": ["vitest.explorer", "anthropic.claude-code"],
       "settings": {
-        "editor.formatOnSave": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
-        },
         "typescript.preferences.importModuleSpecifier": "relative"
       }
     }
   },
   "remoteEnv": {
-    "PATH": "/home/node/.vite-plus/bin:${containerEnv:PATH}"
+    "PATH": "/home/node/.vite-plus/bin:${containerEnv:PATH}",
+    "DATABASE_URL": "postgresql://postgres:postgres@postgres:5432/prisma_strong_migrations_test"
   },
-  "mounts": [
-    "source=prisma-strong-migrations-node-modules,target=/workspaces/prisma-strong-migrations/node_modules,type=volume"
-  ],
   "onCreateCommand": "sudo chown -R node:node /workspaces/prisma-strong-migrations/node_modules",
   "postCreateCommand": "bash .devcontainer/post-create.sh",
   "remoteUser": "node"
