@@ -10,10 +10,10 @@ export const consoleReport = (results: CheckResult[]): void => {
   for (const result of results) {
     const { rule, statement, message, suggestion } = result;
     const severity = rule.severity === "error" ? chalk.red("error") : chalk.yellow("warning");
-    const location = `${statement.line}`;
+    const location = `${statement.migrationPath} line ${statement.line}`;
 
     console.log();
-    console.log(`${severity} [${chalk.bold(rule.name)}] ${chalk.dim(`line ${location}`)}`);
+    console.log(`${severity} [${chalk.bold(rule.name)}] ${chalk.dim(location)}`);
     console.log(`  ${chalk.white(message)}`);
     console.log();
     console.log(
