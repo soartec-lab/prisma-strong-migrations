@@ -140,6 +140,12 @@ export function registerDevCommand(migrate: Command): void {
         }
       }
 
+      // --fix is fix-only: never apply the migration, even if there are no errors.
+      if (options.fix) {
+        console.log("✓ No issues to fix.");
+        process.exit(0);
+      }
+
       const applyArgs = ["migrate", "dev"];
       if (options.schema) applyArgs.push("--schema", options.schema);
       applyArgs.push(...cmd.args);
