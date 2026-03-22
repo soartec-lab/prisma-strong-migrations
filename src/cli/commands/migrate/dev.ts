@@ -97,7 +97,7 @@ export function registerDevCommand(migrate: Command): void {
         consoleReport(allResults);
       }
 
-      const failOnWarning = config.ci?.failOnWarning ?? false;
+      const failOnWarning = config.failOnWarning ?? false;
       const errorResults = allResults.filter((r) => r.rule.severity === "error");
       const warnResults = allResults.filter((r) => r.rule.severity === "warning");
       const hasErrors = errorResults.length > 0 || (failOnWarning && warnResults.length > 0);

@@ -12,7 +12,8 @@ const mockContext: CheckContext = {
     customRulesDir: "",
     customRules: [],
     warningsAsErrors: false,
-    ci: { failOnWarning: false, failOnError: true },
+    failOnWarning: false,
+    failOnError: true,
     migrationsDir: "",
   },
 };

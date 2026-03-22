@@ -6,10 +6,8 @@ export interface Config {
   customRulesDir?: string;
   customRules?: Rule[];
   warningsAsErrors?: boolean;
-  ci?: {
-    failOnWarning?: boolean;
-    failOnError?: boolean;
-  };
+  failOnWarning?: boolean;
+  failOnError?: boolean;
   migrationsDir?: string;
 }
 
@@ -19,9 +17,7 @@ export const DEFAULT_CONFIG: Required<Config> = {
   customRulesDir: "./prisma-strong-migrations-rules",
   customRules: [],
   warningsAsErrors: false,
-  ci: {
-    failOnWarning: false,
-    failOnError: true,
-  },
+  failOnWarning: false,
+  failOnError: true,
   migrationsDir: "./prisma/migrations",
 };

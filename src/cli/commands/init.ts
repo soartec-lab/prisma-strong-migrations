@@ -21,11 +21,11 @@ export default {
   // Treat warnings as errors
   warningsAsErrors: false,
 
-  // CI settings
-  ci: {
-    failOnWarning: false,
-    failOnError: true,
-  },
+  // Exit with non-zero code if warnings are found (default: false)
+  failOnWarning: false,
+
+  // Exit with non-zero code if errors are found (default: true)
+  failOnError: true,
 };
 `;
 

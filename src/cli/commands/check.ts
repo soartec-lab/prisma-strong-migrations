@@ -73,7 +73,7 @@ export function registerCheckCommand(program: Command): void {
       if (options.fail !== false) {
         const hasErrors = allResults.some((r) => r.rule.severity === "error");
         const hasWarnings = allResults.some((r) => r.rule.severity === "warning");
-        const failOnWarning = config.ci?.failOnWarning ?? false;
+        const failOnWarning = config.failOnWarning ?? false;
 
         if (hasErrors || (failOnWarning && hasWarnings)) {
           process.exit(1);

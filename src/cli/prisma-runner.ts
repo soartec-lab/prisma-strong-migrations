@@ -39,7 +39,7 @@ export async function runCheckAndReport(
 
   const hasErrors = allResults.some((r) => r.rule.severity === "error");
   const hasWarnings = allResults.some((r) => r.rule.severity === "warning");
-  const failOnWarning = config.ci?.failOnWarning ?? false;
+  const failOnWarning = config.failOnWarning ?? false;
 
   return hasErrors || (failOnWarning && hasWarnings);
 }
