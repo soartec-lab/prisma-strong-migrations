@@ -119,6 +119,71 @@ ALTER TABLE "legacy_users" DROP COLUMN "old_name";
 ALTER TABLE "users" DROP COLUMN "name";
 ```
 
+## Auto-fix (`--fix`)
+
+Some rules can automatically rewrite the migration SQL to a safer equivalent. Use `--fix` to apply these fixes without editing the file manually.
+
+### Supported rules
+
+| Rule                  | What `--fix` does                                                                                                   |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `addIndex`            | `CREATE INDEX` → `CREATE INDEX CONCURRENTLY` + adds disable-transaction header                                      |
+| `removeIndex`         | `DROP INDEX` → `DROP INDEX CONCURRENTLY` + adds disable-transaction header                                          |
+| `addForeignKey`       | Adds `NOT VALID` + appends `VALIDATE CONSTRAINT` as a second statement                                              |
+| `addCheckConstraint`  | Adds `NOT VALID` + appends `VALIDATE CONSTRAINT` as a second statement                                              |
+| `setNotNull`          | Expands into: `ADD CONSTRAINT … CHECK NOT VALID` → `VALIDATE CONSTRAINT` → `SET NOT NULL` → `DROP CONSTRAINT`       |
+| `addUniqueConstraint` | Replaces with `CREATE UNIQUE INDEX CONCURRENTLY` + `ADD CONSTRAINT … USING INDEX` + adds disable-transaction header |
+
+Rules that require application code changes (`removeColumn`, `renameColumn`, etc.) or human-supplied values cannot be auto-fixed.
+
+### Usage
+
+#### With `migrate dev`
+
+```bash
+# 1. Modify schema.prisma, then:
+npx prisma-strong-migrations migrate dev --fix
+# → Fixes are written to the migration SQL file.
+#   The migration is NOT applied yet.
+
+# 2. Review the rewritten SQL, then apply:
+npx prisma-strong-migrations migrate dev
+```
+
+> **Important:** `--fix` is fix-only. Even if all errors were resolved, the migration is never applied in the same run. Always re-run without `--fix` to apply.
+
+#### With `check`
+
+```bash
+# Fix all auto-fixable issues across all migration files:
+npx prisma-strong-migrations check --fix
+
+# Fix a specific migration file:
+npx prisma-strong-migrations check prisma/migrations/20240320_add_index/migration.sql --fix
+```
+
+### Example: Adding an index
+
+```bash
+# After schema.prisma change, prisma-strong-migrations generates and checks:
+npx prisma-strong-migrations migrate dev --fix
+
+# Output:
+# ✔ Auto-fixed 1 issue(s) in prisma/migrations/20240320_.../migration.sql
+# ✅ Auto-fix applied. Run the same command again (without --fix) to apply the migration.
+
+# The SQL is now:
+# -- prisma-migrate-disable-next-transaction
+# CREATE INDEX CONCURRENTLY "User_email_idx" ON "User"("email");
+
+# Review and apply:
+npx prisma-strong-migrations migrate dev
+```
+
+### When not all issues can be fixed
+
+If a migration contains both auto-fixable and non-fixable errors, `--fix` applies what it can and then exits with an error listing the remaining issues. Edit those manually before re-running.
+
 ## Specific Scenarios
 
 ### Scenario 1: Column Removal
