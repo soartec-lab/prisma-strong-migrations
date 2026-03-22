@@ -117,7 +117,8 @@ export function registerDevCommand(migrate: Command): void {
               process.exit(1);
             }
           }
-          // All fixable errors resolved — proceed to apply below
+          console.log("\n✅ Auto-fix applied. Run the same command again (without --fix) to apply the migration.");
+          process.exit(0);
         } else {
           if (allErrorsFixable) {
             console.error("\n❌ Migration check failed.");
