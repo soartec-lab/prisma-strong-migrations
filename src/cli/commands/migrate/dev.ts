@@ -119,15 +119,17 @@ export function registerDevCommand(migrate: Command): void {
           }
           // All fixable errors resolved — proceed to apply below
         } else {
-          console.error(
-            "\n❌ Migration check failed. Edit the migration files to fix the issues, then try again.",
-          );
           if (allErrorsFixable) {
+            console.error("\n❌ Migration check failed.");
             console.error(
               "\n💡 These issues can be auto-fixed (migration SQL only — schema.prisma will not be changed).",
             );
             console.error("   If this looks correct, run with --fix to apply:\n");
             console.error("   vp exec prisma-strong-migrations migrate dev --fix\n");
+          } else {
+            console.error(
+              "\n❌ Migration check failed. Edit the migration files to fix the issues, then try again.",
+            );
           }
           process.exit(1);
         }
