@@ -13,6 +13,7 @@ generator client {
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
+  name      String
   createdAt DateTime  @default(now()) @map("created_at")
   posts     Post[]
   comments  Comment[]
@@ -23,35 +24,23 @@ model User {
 model Post {
   id          Int       @id @default(autoincrement())
   title       String
-  body        String  @db.VarChar(255)
+  body        String
   userId      Int       @map("user_id")
-  publishedAt DateTime  @default(now()) @map("published_at")
-  metadata    Json?
-  categoryId  Int?      @map("category_id")
-  category    Category? @relation(fields: [categoryId], references: [id])
+  publishedAt DateTime? @map("published_at")
   user        User      @relation(fields: [userId], references: [id])
   comments    Comment[]
 
-  @@unique([title])
   @@map("posts")
-}
-
-model Category {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  posts Post[]
-
-  @@map("categories")
 }
 
 model Comment {
   id        Int      @id @default(autoincrement())
-  content   String
+  body      String
   postId    Int      @map("post_id")
   userId    Int      @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   post      Post     @relation(fields: [postId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 
-  @@map("post_comments")
+  @@map("comments")
 }
