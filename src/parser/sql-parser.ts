@@ -560,11 +560,6 @@ function splitIntoStatements(sql: string): Array<{ text: string; offset: number 
 // ---- Raw text and line number extraction from AST location ----
 
 /**
- * pgsql-ast-parser's _location.start points to the semicolon that ended the
- * PREVIOUS statement (or 0 for the first statement), and .end points to the
- * semicolon that ends THIS statement.
- */
-/**
  * Walk `slice` forward, skipping whitespace, block comments, and line comments.
  * Returns the offset (relative to `slice`) of the first SQL keyword character.
  */
@@ -590,13 +585,15 @@ function getRawTextAndLine(
   sql: string,
   location: { start: number; end: number },
 ): { raw: string; line: number } {
-  const contentStart = location.start > 0 ? location.start + 1 : 0;
+  // _location.start points to the first character of this statement (NOT the
+  // preceding semicolon). Use it directly as the content start.
+  const contentStart = location.start;
   const raw = sql.slice(contentStart, location.end + 1).trim();
-  // Skip block comments (e.g. Prisma's /* Warnings: ... */ header) and line comments
-  // to find the line of the actual SQL keyword, so that disable-next-line comments
-  // placed immediately before the SQL keyword are matched correctly.
-  const relativeOffset = skipLeadingComments(sql.slice(contentStart));
-  const firstTokenOffset = contentStart + relativeOffset;
+  // line: use skipLeadingComments so that disable-next-line comments placed
+  // immediately before the SQL keyword are matched correctly. For the fast
+  // path, _location.start already points at the keyword so this is usually a
+  // no-op, but guards against any leading whitespace pgsql-ast-parser may skip.
+  const firstTokenOffset = contentStart + skipLeadingComments(sql.slice(contentStart));
   const line = lineNumberAt(firstTokenOffset, sql);
   return { raw, line };
 }

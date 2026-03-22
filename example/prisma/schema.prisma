@@ -25,22 +25,33 @@ model Post {
   title       String
   body        String  @db.VarChar(255)
   userId      Int       @map("user_id")
-  publishedAt DateTime? @map("published_at")
+  publishedAt DateTime  @default(now()) @map("published_at")
+  metadata    Json?
+  categoryId  Int?      @map("category_id")
+  category    Category? @relation(fields: [categoryId], references: [id])
   user        User      @relation(fields: [userId], references: [id])
   comments    Comment[]
 
-  @@index([userId])
+  @@unique([title])
   @@map("posts")
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  posts Post[]
+
+  @@map("categories")
 }
 
 model Comment {
   id        Int      @id @default(autoincrement())
-  body      String
+  content   String
   postId    Int      @map("post_id")
   userId    Int      @map("user_id")
   createdAt DateTime @default(now()) @map("created_at")
   post      Post     @relation(fields: [postId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
 
-  @@map("comments")
+  @@map("post_comments")
 }
