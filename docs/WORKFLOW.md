@@ -401,6 +401,126 @@ module.exports = {
 };
 ```
 
+## Command Reference
+
+### `check [migration]`
+
+Check migration files for dangerous operations.
+
+```bash
+# Check all migrations in migrationsDir
+npx prisma-strong-migrations check
+
+# Check a specific migration file
+npx prisma-strong-migrations check prisma/migrations/20240320_add_index/migration.sql
+```
+
+| Option                  | Description                                                         |
+| ----------------------- | ------------------------------------------------------------------- |
+| `-f, --format <format>` | Output format: `console` (default) or `json`                        |
+| `-c, --config <path>`   | Path to config file (default: `prisma-strong-migrations.config.js`) |
+| `--no-fail`             | Always exit with code 0, even if errors are found                   |
+| `--fix`                 | Automatically rewrite auto-fixable issues in the SQL files          |
+
+#### `--format json`
+
+Outputs a JSON object suitable for CI tooling:
+
+```json
+{
+  "errors": [
+    {
+      "ruleName": "addIndex",
+      "severity": "error",
+      "migrationPath": "prisma/migrations/20240320_.../migration.sql",
+      "line": 3,
+      "message": "...",
+      "suggestion": "..."
+    }
+  ],
+  "warnings": [],
+  "totalErrors": 1,
+  "totalWarnings": 0
+}
+```
+
+#### `--no-fail`
+
+Useful when you want to surface issues as information without blocking CI:
+
+```bash
+# Report issues but never fail the pipeline
+npx prisma-strong-migrations check --no-fail
+```
+
+---
+
+### `migrate dev`
+
+Create a migration with `--create-only`, check it, then apply if safe.
+
+```bash
+npx prisma-strong-migrations migrate dev
+```
+
+| Option                | Description                                                                   |
+| --------------------- | ----------------------------------------------------------------------------- |
+| `--name <name>`       | Name passed to `prisma migrate dev`                                           |
+| `--schema <path>`     | Path to `schema.prisma`, passed to Prisma                                     |
+| `-c, --config <path>` | Path to config file                                                           |
+| `--fix`               | Auto-fix issues, then exit without applying (re-run without `--fix` to apply) |
+| `--force`             | Skip all safety checks — for local dev environment setup only                 |
+
+Any unknown options are forwarded to `prisma migrate dev`.
+
+---
+
+### `migrate deploy`
+
+Check all migrations, then run `prisma migrate deploy` if all checks pass.
+
+```bash
+npx prisma-strong-migrations migrate deploy
+```
+
+| Option                | Description                                                   |
+| --------------------- | ------------------------------------------------------------- |
+| `-c, --config <path>` | Path to config file                                           |
+| `--force`             | Skip all safety checks — for local dev environment setup only |
+
+Any unknown options are forwarded to `prisma migrate deploy`.
+
+---
+
+### `init`
+
+Interactive setup wizard. Run once when introducing the tool to a project.
+
+```bash
+npx prisma-strong-migrations init
+```
+
+What it does:
+
+1. Creates `prisma-strong-migrations.config.js` in the current directory with all available options and their defaults
+2. Scans `package.json` scripts for `prisma migrate dev` / `prisma migrate deploy` and interactively offers to replace them with `prisma-strong-migrations migrate dev` / `prisma-strong-migrations migrate deploy`
+
+---
+
+### `init-rule <name>`
+
+Generate a custom rule template.
+
+```bash
+npx prisma-strong-migrations init-rule my-rule-name
+```
+
+Creates `./prisma-strong-migrations-rules/my-rule-name.js` with a skeleton rule implementation. Edit the file to implement `detect`, `message`, and `suggestion`.
+
+See [README.md](../README.md#custom-rules) for the full custom rules guide.
+
+---
+
 ## Adopting in an Existing Project
 
 When introducing prisma-strong-migrations to an already-running application, the first local environment setup presents a specific challenge:
