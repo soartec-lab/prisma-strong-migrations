@@ -13,7 +13,6 @@ generator client {
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
-  name      String
   createdAt DateTime  @default(now()) @map("created_at")
   posts     Post[]
   comments  Comment[]
@@ -24,7 +23,7 @@ model User {
 model Post {
   id          Int       @id @default(autoincrement())
   title       String
-  body        String
+  body        String  @db.VarChar(255)
   userId      Int       @map("user_id")
   publishedAt DateTime? @map("published_at")
   user        User      @relation(fields: [userId], references: [id])
