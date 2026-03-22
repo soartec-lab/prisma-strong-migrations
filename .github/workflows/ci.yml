@@ -14,43 +14,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
         with:
-          version: 10.32.1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: npx vp check
-
-      - run: npx knip
+          node-version: '22'
+          cache: true
+      - run: vp check
+      - run: vp exec knip
 
   test:
     name: Test / Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
+      - uses: voidzero-dev/setup-vp@v1
         with:
-          version: 10.32.1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-
-      - run: npx vp test
-
-      - run: npx vp pack
-
+          node-version: '22'
+          cache: true
+      - run: vp test
+      - run: vp pack
       - uses: actions/upload-artifact@v4
         with:
           name: dist
