@@ -461,7 +461,20 @@ export class ConfigError extends Error {
 }
 ```
 
-### 10. Checklist
+### 10. Mandatory Pre-Commit Checks (MUST NOT SKIP)
+
+**Before every commit — no exceptions — verify all of the following pass:**
+
+```bash
+vp check   # formatting, lint, type check
+vp test    # unit tests + integration tests
+```
+
+If formatting issues are found, run `vp check --fix` first, then re-run `vp check` to confirm.
+
+> **Why:** Skipping these checks causes CI failures. A formatting issue in README.md once broke CI because it was committed without running `vp check`.
+
+### 11. Checklist
 
 Checklist for implementing each feature:
 
@@ -471,7 +484,7 @@ Checklist for implementing each feature:
 - [ ] Commit
 - [ ] Create integration tests (if applicable)
 - [ ] Commit
-- [ ] Pass `vp check` (lint and type check)
+- [ ] Pass `vp check` (formatting, lint, type check)
 - [ ] Pass `vp test`
 
 ## Rule List
