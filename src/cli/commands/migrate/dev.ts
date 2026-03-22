@@ -85,7 +85,11 @@ export function registerDevCommand(migrate: Command): void {
         allResults.push(...results);
       }
 
-      consoleReport(allResults);
+      // When --fix is set, skip reporting — fixable errors will be silently
+      // corrected below, and unfixable ones will be reported after the fix attempt.
+      if (!options.fix) {
+        consoleReport(allResults);
+      }
 
       const failOnWarning = config.ci?.failOnWarning ?? false;
       const errorResults = allResults.filter((r) => r.rule.severity === "error");
