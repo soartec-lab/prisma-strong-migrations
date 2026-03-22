@@ -79,7 +79,7 @@ export function getPendingMigrationNames(schemaPath?: string): Set<string> | nul
   let inPendingSection = false;
   for (const raw of stdout.split("\n")) {
     const line = raw.trim();
-    if (line.includes("Following migration") && line.includes("not yet been applied")) {
+    if (line.toLowerCase().includes("following migration") && line.includes("not yet been applied")) {
       inPendingSection = true;
       continue;
     }
