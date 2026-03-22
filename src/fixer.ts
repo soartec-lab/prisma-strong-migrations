@@ -52,9 +52,14 @@ export function applyFixes(originalSql: string, results: CheckResult[]): FixerRe
     appliedCount++;
   }
 
-  // Add disable-transaction header if needed and not already present
+  // Add disable-transaction header if needed and not already present.
+  // Also suppress the disableTransactionWarning since this header was added
+  // automatically by the auto-fix — warning the user about their own fix is noise.
   if (requiresDisableTransaction && !sql.includes("-- prisma-migrate-disable-next-transaction")) {
-    sql = "-- prisma-migrate-disable-next-transaction\n" + sql;
+    sql =
+      "-- prisma-strong-migrations-disable-next-line disableTransactionWarning\n" +
+      "-- prisma-migrate-disable-next-transaction\n" +
+      sql;
   }
 
   return { sql, appliedCount, skippedResults };
