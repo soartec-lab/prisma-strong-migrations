@@ -187,13 +187,13 @@ npx prisma-strong-migrations migrate deploy
 
 **`migrate dev` vs `migrate deploy`:**
 
-|                        | `migrate dev`                   | `migrate deploy`               |
-| ---------------------- | ------------------------------- | ------------------------------ |
-| Intended environment   | Local development               | Production / staging           |
-| Creates migration file | Yes (via `--create-only`)       | No (apply only)                |
-| Interactive prompts    | Yes                             | No                             |
-| Checks                 | Newly generated migration       | All pending migrations         |
-| Typical usage          | `npx psm migrate dev --name …`  | `npx psm migrate deploy`       |
+|                        | `migrate dev`                  | `migrate deploy`         |
+| ---------------------- | ------------------------------ | ------------------------ |
+| Intended environment   | Local development              | Production / staging     |
+| Creates migration file | Yes (via `--create-only`)      | No (apply only)          |
+| Interactive prompts    | Yes                            | No                       |
+| Checks                 | Newly generated migration      | All pending migrations   |
+| Typical usage          | `npx psm migrate dev --name …` | `npx psm migrate deploy` |
 
 ### `init`
 
