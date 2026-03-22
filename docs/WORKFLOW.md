@@ -336,6 +336,37 @@ module.exports = {
 };
 ```
 
+## Adopting in an Existing Project
+
+When introducing prisma-strong-migrations to an already-running application, the first local environment setup presents a specific challenge:
+
+- Many migration files exist on disk (e.g., 50+ files)
+- The local database is clean (no migration history)
+- All those files are flagged as "pending" and checked
+- Old migrations trigger errors even though they're safely running in production
+
+### Solution: `--force`
+
+Use `--force` to skip all safety checks and apply migrations directly:
+
+```bash
+# Local dev environment setup — bypass all checks
+npx prisma-strong-migrations migrate dev --force
+
+# Or with deploy:
+npx prisma-strong-migrations migrate deploy --force
+```
+
+A warning is printed when `--force` is used:
+
+```
+⚠️  --force: Safety checks skipped. Use only for local dev environment setup.
+```
+
+After the initial setup is done, run without `--force` as usual for day-to-day development.
+
+> **Important:** Never use `--force` in CI/CD pipelines or production deployments. It is intended exclusively for local development environment bootstrap.
+
 ## Troubleshooting
 
 ### Check Fails in CI but Passes Locally

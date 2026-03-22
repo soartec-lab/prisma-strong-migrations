@@ -202,6 +202,10 @@ program
   .action((name) => {
     // Generate custom rule template
   });
+
+// migrate dev / deploy also support:
+//   --fix    auto-fix fixable issues, then exit (never applies migration)
+//   --force  skip all safety checks (local dev environment setup only)
 ```
 
 ### 2. SQL Parser (`src/parser/sql-parser.ts`)

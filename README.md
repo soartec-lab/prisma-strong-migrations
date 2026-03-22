@@ -69,6 +69,21 @@ npx prisma migrate dev
 #     - Add disable comment if intentional
 ```
 
+### Adopting in an Existing Project
+
+When introducing this tool to an already-running application, the first local environment setup can be painful: all existing migration files will be pending in the fresh database, and they'll trigger a flood of errors even though those migrations are already safely running in production.
+
+Use `--force` to skip safety checks and apply all migrations as-is:
+
+```bash
+# Apply all existing migrations without safety checks (local setup only)
+npx prisma-strong-migrations migrate dev --force
+# or
+npx prisma-strong-migrations migrate deploy --force
+```
+
+> **Warning:** `--force` disables all safety checks. Use it only for local development environment setup, never in production CI/CD pipelines.
+
 ## Checks
 
 Potentially dangerous operations:
