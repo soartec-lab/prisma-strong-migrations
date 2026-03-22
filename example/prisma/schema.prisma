@@ -3,7 +3,7 @@
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("EXAMPLE_DATABASE_URL")
 }
 
 generator client {
@@ -13,6 +13,7 @@ generator client {
 model User {
   id        Int       @id @default(autoincrement())
   email     String    @unique
+  name      String
   createdAt DateTime  @default(now()) @map("created_at")
   posts     Post[]
   comments  Comment[]
