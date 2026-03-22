@@ -564,13 +564,39 @@ function splitIntoStatements(sql: string): Array<{ text: string; offset: number 
  * PREVIOUS statement (or 0 for the first statement), and .end points to the
  * semicolon that ends THIS statement.
  */
+/**
+ * Walk `slice` forward, skipping whitespace, block comments, and line comments.
+ * Returns the offset (relative to `slice`) of the first SQL keyword character.
+ */
+function skipLeadingComments(slice: string): number {
+  let i = 0;
+  while (i < slice.length) {
+    if (/\s/.test(slice[i])) {
+      i++;
+    } else if (slice.startsWith("/*", i)) {
+      const end = slice.indexOf("*/", i + 2);
+      i = end === -1 ? slice.length : end + 2;
+    } else if (slice.startsWith("--", i)) {
+      const end = slice.indexOf("\n", i + 2);
+      i = end === -1 ? slice.length : end + 1;
+    } else {
+      return i;
+    }
+  }
+  return i;
+}
+
 function getRawTextAndLine(
   sql: string,
   location: { start: number; end: number },
 ): { raw: string; line: number } {
   const contentStart = location.start > 0 ? location.start + 1 : 0;
   const raw = sql.slice(contentStart, location.end + 1).trim();
-  const firstTokenOffset = sql.slice(contentStart).search(/\S/) + contentStart;
+  // Skip block comments (e.g. Prisma's /* Warnings: ... */ header) and line comments
+  // to find the line of the actual SQL keyword, so that disable-next-line comments
+  // placed immediately before the SQL keyword are matched correctly.
+  const relativeOffset = skipLeadingComments(sql.slice(contentStart));
+  const firstTokenOffset = contentStart + relativeOffset;
   const line = lineNumberAt(firstTokenOffset, sql);
   return { raw, line };
 }
@@ -604,7 +630,9 @@ export function parseSql(sql: string): ParsedStatement[] {
     return parsedStatement;
   }
 
-  const disableTransactionStatements = buildDisableTransactionStatements(sql);
+  const disableTransactionStatements = buildDisableTransactionStatements(sql).map(
+    applyDisableComment,
+  );
 
   // Fast path: parse the whole file at once
   try {
@@ -628,7 +656,7 @@ export function parseSql(sql: string): ParsedStatement[] {
       const trimmed = text.trim().replace(/;$/, "");
       if (!trimmed) return [];
 
-      const firstTokenOffset = offset + text.search(/\S/);
+      const firstTokenOffset = offset + skipLeadingComments(text);
       const line = lineNumberAt(firstTokenOffset, sql);
 
       // Strip block comments before AST/regex parsing — pgsql-ast-parser chokes on
