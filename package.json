@@ -1,6 +1,6 @@
 {
   "name": "@soartec-lab/prisma-strong-migrations",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Detect dangerous operations in Prisma migrations",
   "keywords": [
     "database",
