@@ -9,11 +9,7 @@ import { loadConfig } from "../../../config/loader";
 import { loadCustomRules } from "../../../rules/loader";
 import { findMigrationFiles } from "../../find-migration-files";
 import type { CheckResult } from "../../../rules/types";
-import {
-  getPendingMigrationNames,
-  migrationNameFromPath,
-  runPrisma,
-} from "../../prisma-runner";
+import { getPendingMigrationNames, migrationNameFromPath, runPrisma } from "../../prisma-runner";
 
 export function registerDevCommand(migrate: Command): void {
   migrate
@@ -24,7 +20,19 @@ export function registerDevCommand(migrate: Command): void {
     .option("--name <name>", "name of the migration")
     .option("--schema <path>", "path to prisma schema")
     .option("--fix", "automatically fix issues where possible, then apply")
+    .option("--force", "skip all safety checks (use only for local dev environment setup)")
     .action(async (options, cmd: Command) => {
+      if (options.force) {
+        console.warn(
+          "⚠️  --force: Safety checks skipped. Use only for local dev environment setup.",
+        );
+        const applyArgs = ["migrate", "dev"];
+        if (options.name) applyArgs.push("--name", options.name);
+        if (options.schema) applyArgs.push("--schema", options.schema);
+        applyArgs.push(...cmd.args);
+        process.exit(runPrisma(applyArgs));
+      }
+
       const config = await loadConfig(options.config);
       if (config.customRulesDir) {
         const customRules = await loadCustomRules(config.customRulesDir);
@@ -45,9 +53,7 @@ export function registerDevCommand(migrate: Command): void {
       // potentially pending to avoid accidentally applying unfixed migrations.
       const existingPendingFiles =
         existingPendingNames !== null
-          ? allFilesBeforeCreate.filter((f) =>
-              existingPendingNames.has(migrationNameFromPath(f)),
-            )
+          ? allFilesBeforeCreate.filter((f) => existingPendingNames.has(migrationNameFromPath(f)))
           : allFilesBeforeCreate;
 
       if (existingPendingFiles.length === 0) {
@@ -103,9 +109,7 @@ export function registerDevCommand(migrate: Command): void {
           // Apply auto-fixes to each file
           for (const filePath of checkFiles) {
             const sql = await readFile(filePath, "utf-8");
-            const fileResults = allResults.filter(
-              (r) => r.statement.migrationPath === filePath,
-            );
+            const fileResults = allResults.filter((r) => r.statement.migrationPath === filePath);
             if (fileResults.length === 0) continue;
             const { sql: fixedSql, appliedCount, skippedResults } = applyFixes(sql, fileResults);
             if (appliedCount > 0) {
@@ -121,7 +125,9 @@ export function registerDevCommand(migrate: Command): void {
               process.exit(1);
             }
           }
-          console.log("\n✅ Auto-fix applied. Run the same command again (without --fix) to apply the migration.");
+          console.log(
+            "\n✅ Auto-fix applied. Run the same command again (without --fix) to apply the migration.",
+          );
           process.exit(0);
         } else {
           if (allErrorsFixable) {

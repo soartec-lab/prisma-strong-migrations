@@ -627,9 +627,8 @@ export function parseSql(sql: string): ParsedStatement[] {
     return parsedStatement;
   }
 
-  const disableTransactionStatements = buildDisableTransactionStatements(sql).map(
-    applyDisableComment,
-  );
+  const disableTransactionStatements =
+    buildDisableTransactionStatements(sql).map(applyDisableComment);
 
   // Fast path: parse the whole file at once
   try {

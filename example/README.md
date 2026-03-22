@@ -168,15 +168,15 @@ error [changeColumnType] prisma/migrations/.../migration.sql line 2
 
 ## Useful commands
 
-| Command                                                        | Description                                         |
-| -------------------------------------------------------------- | --------------------------------------------------- |
-| `docker compose up -d`                                         | Start PostgreSQL                                    |
-| `docker compose down`                                          | Stop PostgreSQL                                     |
+| Command                                                      | Description                                         |
+| ------------------------------------------------------------ | --------------------------------------------------- |
+| `docker compose up -d`                                       | Start PostgreSQL                                    |
+| `docker compose down`                                        | Stop PostgreSQL                                     |
 | `vp exec prisma-strong-migrations migrate dev --name <name>` | Generate migration → check → apply (stops on error) |
 | `vp exec prisma-strong-migrations check`                     | Check all existing migrations                       |
 | `vp exec prisma-strong-migrations check --fix`               | Auto-fix where possible (e.g. adds CONCURRENTLY)    |
 | `vp exec prisma-strong-migrations check --format json`       | Output results as JSON                              |
-| `pnpm exec prisma migrate dev`                                 | Apply already-fixed migrations                      |
+| `pnpm exec prisma migrate dev`                               | Apply already-fixed migrations                      |
 
 ---
 

@@ -10,7 +10,15 @@ export function registerDeployCommand(migrate: Command): void {
     .description("Check all migrations then run prisma migrate deploy (CI-safe)")
     .allowUnknownOption()
     .option("-c, --config <path>", "path to config file")
+    .option("--force", "skip all safety checks (use only for local dev environment setup)")
     .action(async (options, cmd: Command) => {
+      if (options.force) {
+        console.warn(
+          "⚠️  --force: Safety checks skipped. Use only for local dev environment setup.",
+        );
+        process.exit(runPrisma(["migrate", "deploy", ...cmd.args]));
+      }
+
       const config = await loadConfig(options.config);
       if (config.customRulesDir) {
         const customRules = await loadCustomRules(config.customRulesDir);
