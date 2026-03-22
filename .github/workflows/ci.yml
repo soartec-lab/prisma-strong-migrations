@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  npm_config_store_dir: ~/.pnpm-store
+
 jobs:
   check:
     name: Lint / Type Check / Unused Code
