@@ -84,6 +84,95 @@ npx prisma-strong-migrations migrate deploy --force
 
 > **Warning:** `--force` disables all safety checks. Use it only for local development environment setup, never in production CI/CD pipelines.
 
+## Commands
+
+### `check [migration]`
+
+Check migration files for dangerous operations.
+
+```bash
+# Check all migrations
+npx prisma-strong-migrations check
+
+# Check a specific file
+npx prisma-strong-migrations check prisma/migrations/20240320_add_index/migration.sql
+```
+
+| Option                  | Description                                                         |
+| ----------------------- | ------------------------------------------------------------------- |
+| `-f, --format <format>` | Output format: `console` (default) or `json`                        |
+| `-c, --config <path>`   | Path to config file (default: `prisma-strong-migrations.config.js`) |
+| `--no-fail`             | Always exit with code 0, even if errors are found                   |
+| `--fix`                 | Automatically rewrite auto-fixable issues in the SQL files          |
+
+The `--format json` output shape:
+
+```json
+{
+  "errors": [
+    {
+      "ruleName": "addIndex",
+      "severity": "error",
+      "migrationPath": "prisma/migrations/...",
+      "line": 3,
+      "message": "...",
+      "suggestion": "..."
+    }
+  ],
+  "warnings": [],
+  "totalErrors": 1,
+  "totalWarnings": 0
+}
+```
+
+### `migrate dev`
+
+Create a migration with `--create-only`, check it, then apply if safe. Wraps `prisma migrate dev`.
+
+```bash
+npx prisma-strong-migrations migrate dev
+```
+
+| Option                | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `--name <name>`       | Migration name, passed to Prisma                           |
+| `--schema <path>`     | Path to `schema.prisma`, passed to Prisma                  |
+| `-c, --config <path>` | Path to config file                                        |
+| `--fix`               | Auto-fix issues and exit — re-run without `--fix` to apply |
+| `--force`             | Skip all safety checks (local dev setup only)              |
+
+### `migrate deploy`
+
+Check all migrations, then run `prisma migrate deploy` if all checks pass. Wraps `prisma migrate deploy`.
+
+```bash
+npx prisma-strong-migrations migrate deploy
+```
+
+| Option                | Description                                   |
+| --------------------- | --------------------------------------------- |
+| `-c, --config <path>` | Path to config file                           |
+| `--force`             | Skip all safety checks (local dev setup only) |
+
+### `init`
+
+Interactive setup wizard. Run once when introducing the tool to a project.
+
+```bash
+npx prisma-strong-migrations init
+```
+
+1. Creates `prisma-strong-migrations.config.js` with all options and defaults
+2. Scans `package.json` scripts and interactively offers to replace `prisma migrate dev` / `prisma migrate deploy` with the wrapped commands
+
+### `init-rule <name>`
+
+Generate a custom rule template in `./prisma-strong-migrations-rules/<name>.js`.
+
+```bash
+npx prisma-strong-migrations init-rule my-rule
+```
+
 ## Checks
 
 Potentially dangerous operations:
