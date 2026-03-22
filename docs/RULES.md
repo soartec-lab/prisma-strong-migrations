@@ -922,7 +922,31 @@ CREATE TABLE "_CategoryToPost" (
 
 ## Prisma-Specific Rules
 
-The following rules detect issues specific to how Prisma wraps migrations in transactions and how concurrent index operations interact with Prisma's migration runner.
+### Prisma's Transaction Model
+
+By default, Prisma wraps every migration file in a single transaction block:
+
+```sql
+BEGIN;
+
+ALTER TABLE "users" ADD COLUMN "status" text;
+CREATE INDEX "users_status_idx" ON "users"("status");
+
+COMMIT;
+```
+
+This ensures that if any statement fails, the entire migration is rolled back. However, some PostgreSQL operations cannot run inside a transaction — most notably `CREATE INDEX CONCURRENTLY` and `DROP INDEX CONCURRENTLY`.
+
+To opt out of the transaction wrapper for a specific migration file, add the following comment as the **first line** of the file:
+
+```sql
+-- prisma-migrate-disable-next-transaction
+CREATE INDEX CONCURRENTLY "users_status_idx" ON "users"("status");
+```
+
+When this header is present, Prisma applies the statements without wrapping them in a transaction. This means there is no automatic rollback if a statement fails — keep such files to a single statement where possible.
+
+The rules in this section detect patterns where Prisma's transaction model interacts with or conflicts with the SQL being generated.
 
 ---
 
@@ -1176,6 +1200,17 @@ ALTER TABLE "User" ALTER COLUMN "role" TYPE "Role" USING "role"::text::"Role";
 DROP TYPE "Role_old";
 ```
 
+#### Why Prisma Generates This
+
+PostgreSQL does not support `ALTER TYPE ... DROP VALUE`, so Prisma works around this by recreating the type with the desired values:
+
+1. Rename the existing type to a temporary name
+2. Create a new type with the updated values
+3. Cast all columns using the old type to the new type
+4. Drop the old type
+
+This 4-step pattern is what prisma-strong-migrations detects.
+
 #### Why It's Dangerous
 
 - PostgreSQL cannot remove ENUM values directly — Prisma recreates the type with fewer values
@@ -1210,6 +1245,33 @@ ALTER TABLE "_CategoryToPost" ADD COLUMN "extra" TEXT;
 DROP TABLE "_CategoryToPost";
 CREATE INDEX ON "_CategoryToPost"("A");
 ```
+
+#### How Prisma Generates This
+
+When you define an implicit many-to-many relation in `schema.prisma`:
+
+```prisma
+model Post {
+  categories Category[]
+}
+
+model Category {
+  posts Post[]
+}
+```
+
+Prisma generates and manages a join table automatically:
+
+```sql
+CREATE TABLE "_CategoryToPost" (
+    "A" integer NOT NULL,
+    "B" integer NOT NULL
+);
+CREATE UNIQUE INDEX "_CategoryToPost_AB_unique" ON "_CategoryToPost"("A", "B");
+CREATE INDEX "_CategoryToPost_B_index" ON "_CategoryToPost"("B");
+```
+
+The table name, column names (`A`, `B`), and indexes are all controlled by Prisma. Manual modifications to this table break Prisma's assumptions.
 
 #### Why It's Dangerous
 

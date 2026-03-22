@@ -16,6 +16,10 @@ npm install prisma-strong-migrations --save-dev
 yarn add prisma-strong-migrations --dev
 # or
 pnpm add prisma-strong-migrations --save-dev
+# or
+bun add prisma-strong-migrations --dev
+# or (vite-plus)
+vp add -D prisma-strong-migrations
 ```
 
 ## How It Works
@@ -23,29 +27,42 @@ pnpm add prisma-strong-migrations --save-dev
 When you create a migration that's potentially dangerous, you'll see an error message like:
 
 ```
-$ npx prisma-strong-migrations check
+prisma/migrations/20240320_remove_user_name/migration.sql
 
-🔍 Checking migration: 20240320_remove_user_name
+error [removeColumn] line 1
+  Removing column "name" from table "users"
 
-=== ❌ Dangerous operation detected [removeColumn] ===
+  ❌ Bad: Removing a column may cause application errors.
+         If you deploy the migration before updating your application code,
+         requests handled by old instances will fail.
 
-📍 Line 3: ALTER TABLE "users" DROP COLUMN "name"
+  ✅ Good: Follow these steps:
+     1. Remove all usages of 'name' field from your code
+     2. Run 'npx prisma generate' to update Prisma Client
+     3. Deploy the code changes
+     4. Then apply this migration with a disable comment
 
-❌ Bad: Removing a column may cause application errors
+  To skip this check, add above the statement:
+     -- prisma-strong-migrations-disable-next-line removeColumn
+────────────────────────────────────────────────────────────
 
-✅ Good: Follow these steps:
-   1. Remove all usages of 'name' field from your code
-   2. Run 'npx prisma generate' to update Prisma Client
-   3. Deploy the code changes
-   4. Then apply this migration
+✗ 1 error
 
-📚 More info: https://github.com/xxx/prisma-strong-migrations#removing-a-column
-
-To skip this check, add above the statement:
-   -- prisma-strong-migrations-disable-next-line removeColumn
-
-Found 1 issue (1 error, 0 warnings)
+❌ Migration check failed.
 ```
+
+## Comparison
+
+| Feature                                      | prisma-strong-migrations | squawk | Prisma built-in    |
+| -------------------------------------------- | ------------------------ | ------ | ------------------ |
+| Prisma-specific rules                        | ✅ 13 rules              | ❌     | ❌                 |
+| Auto-fix (`--fix`)                           | ✅ 6 rules               | ❌     | ❌                 |
+| Custom rules (JS/TS)                         | ✅                       | ❌     | ❌                 |
+| `migrate dev` / `migrate deploy` integration | ✅                       | ❌     | ✅                 |
+| Inline skip with audit trail                 | ✅                       | ❌     | ❌                 |
+| Total rules                                  | 38                       | ~26    | syntax errors only |
+
+[squawk](https://squawkhq.com/) is a general-purpose PostgreSQL SQL linter. It catches common dangerous patterns but has no awareness of Prisma's migration conventions — such as the implicit transaction wrapper, `CONCURRENTLY` requirements, or Prisma-managed tables like `_AToB` join tables.
 
 ## Usage
 
@@ -85,6 +102,8 @@ npx prisma-strong-migrations migrate deploy --force
 > **Warning:** `--force` disables all safety checks. Use it only for local development environment setup, never in production CI/CD pipelines.
 
 ## Commands
+
+All commands are available as `prisma-strong-migrations <command>` or the `psm` shorthand (e.g. `npx psm migrate dev`).
 
 ### `check [migration]`
 
@@ -141,6 +160,18 @@ npx prisma-strong-migrations migrate dev
 | `--fix`               | Auto-fix issues and exit — re-run without `--fix` to apply |
 | `--force`             | Skip all safety checks (local dev setup only)              |
 
+**`--fix` workflow:** `--fix` rewrites SQL files only — it does not apply the migration. Re-run without `--fix` to apply after reviewing the changes.
+
+```bash
+# Step 1: auto-fix the SQL
+npx psm migrate dev --fix
+# ✔ Auto-fixed 1 issue(s) in prisma/migrations/.../migration.sql
+# ✅ Auto-fix applied. Run the same command again (without --fix) to apply the migration.
+
+# Step 2: review the rewritten SQL, then apply
+npx psm migrate dev
+```
+
 ### `migrate deploy`
 
 Check all migrations, then run `prisma migrate deploy` if all checks pass. Wraps `prisma migrate deploy`.
@@ -153,6 +184,16 @@ npx prisma-strong-migrations migrate deploy
 | --------------------- | --------------------------------------------- |
 | `-c, --config <path>` | Path to config file                           |
 | `--force`             | Skip all safety checks (local dev setup only) |
+
+**`migrate dev` vs `migrate deploy`:**
+
+|                        | `migrate dev`                   | `migrate deploy`               |
+| ---------------------- | ------------------------------- | ------------------------------ |
+| Intended environment   | Local development               | Production / staging           |
+| Creates migration file | Yes (via `--create-only`)       | No (apply only)                |
+| Interactive prompts    | Yes                             | No                             |
+| Checks                 | Newly generated migration       | All pending migrations         |
+| Typical usage          | `npx psm migrate dev --name …`  | `npx psm migrate deploy`       |
 
 ### `init`
 
@@ -172,6 +213,17 @@ Generate a custom rule template in `./prisma-strong-migrations-rules/<name>.js`.
 ```bash
 npx prisma-strong-migrations init-rule my-rule
 ```
+
+## Why Prisma-Specific Rules?
+
+General-purpose SQL linters catch many dangerous patterns, but Prisma has conventions that a generic tool cannot know about:
+
+- **Implicit transactions** — Prisma wraps every migration file in `BEGIN/COMMIT` by default. Operations that cannot run inside a transaction (e.g. `CREATE INDEX CONCURRENTLY`) require a `-- prisma-migrate-disable-next-transaction` header, and mixing multiple statements in such a file removes rollback protection.
+- **Prisma-managed tables** — Join tables like `_CategoryToPost` are fully controlled by Prisma. Direct modifications break its relation management.
+- **ENUM recreation** — PostgreSQL has no `ALTER TYPE … DROP VALUE`. Prisma works around this by recreating the type, which fails if existing rows still hold the removed value.
+- **`@updatedAt` management** — Adding a DB-level `DEFAULT` or trigger on an `@updatedAt` column conflicts with Prisma Client's own update logic.
+
+These 13 Prisma-specific rules cover what generic tools leave undetected.
 
 ## Checks
 
@@ -1179,13 +1231,37 @@ module.exports = {
   // Disable specific rules globally
   disabledRules: ["indexColumnsCount"],
 
-  // Skip specific migrations
+  // Skip specific migrations (matched by substring)
   ignoreMigrations: ["20240101_initial"],
 
   // Custom rules directory
   customRulesDir: "./prisma-strong-migrations-rules",
+
+  // Directory to scan for migration files
+  migrationsDir: "./prisma/migrations",
+
+  // Treat warnings as errors
+  warningsAsErrors: false,
+
+  // Exit non-zero when warnings are found
+  failOnWarning: false,
+
+  // Exit non-zero when errors are found
+  failOnError: true,
 };
 ```
+
+### Configuration options
+
+| Option             | Type       | Default                              | Description                               |
+| ------------------ | ---------- | ------------------------------------ | ----------------------------------------- |
+| `disabledRules`    | `string[]` | `[]`                                 | Rule names to disable globally            |
+| `ignoreMigrations` | `string[]` | `[]`                                 | Migration names to skip (substring match) |
+| `customRulesDir`   | `string`   | `"./prisma-strong-migrations-rules"` | Directory containing custom rule files    |
+| `migrationsDir`    | `string`   | `"./prisma/migrations"`              | Directory to scan for migration files     |
+| `warningsAsErrors` | `boolean`  | `false`                              | Treat warnings as errors (exit non-zero)  |
+| `failOnWarning`    | `boolean`  | `false`                              | Exit non-zero when warnings are found     |
+| `failOnError`      | `boolean`  | `true`                               | Exit non-zero when errors are found       |
 
 ## Custom Rules
 
@@ -1193,7 +1269,32 @@ Create custom rules for your project-specific needs. See [docs/RULES.md](./docs/
 
 ## CI Integration
 
-See [docs/WORKFLOW.md](./docs/WORKFLOW.md) for CI/CD integration examples.
+Add a check step to your pull request workflow so unsafe migrations are caught before they reach production.
+
+### GitHub Actions
+
+```yaml
+name: Migration Check
+
+on:
+  pull_request:
+    paths:
+      - "prisma/schema.prisma"
+      - "prisma/migrations/**"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+      - run: npx psm check
+```
+
+Use `--format json` to parse results in custom scripts or post findings as pull request comments. See [docs/WORKFLOW.md](./docs/WORKFLOW.md) for more CI/CD integration examples.
 
 ## Development
 
