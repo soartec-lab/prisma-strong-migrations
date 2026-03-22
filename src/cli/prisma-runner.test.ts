@@ -62,9 +62,7 @@ describe("getPendingMigrationNames", () => {
     });
 
     const result = getPendingMigrationNames();
-    expect(result).toEqual(
-      new Set(["20260101000000_add_users", "20260102000000_add_posts"]),
-    );
+    expect(result).toEqual(new Set(["20260101000000_add_users", "20260102000000_add_posts"]));
   });
 
   it("should return null when exit is 1 but no pending names are found (error state)", () => {
@@ -117,14 +115,16 @@ describe("getPendingMigrationNames", () => {
 
 describe("migrationNameFromPath", () => {
   it("should extract migration name from relative path", () => {
-    expect(
-      migrationNameFromPath("prisma/migrations/20260322000000_add_users/migration.sql"),
-    ).toBe("20260322000000_add_users");
+    expect(migrationNameFromPath("prisma/migrations/20260322000000_add_users/migration.sql")).toBe(
+      "20260322000000_add_users",
+    );
   });
 
   it("should extract migration name from absolute path", () => {
     expect(
-      migrationNameFromPath("/workspace/project/prisma/migrations/20260101000000_init/migration.sql"),
+      migrationNameFromPath(
+        "/workspace/project/prisma/migrations/20260101000000_init/migration.sql",
+      ),
     ).toBe("20260101000000_init");
   });
 

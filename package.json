@@ -2,19 +2,23 @@
   "name": "@soartec-lab/prisma-strong-migrations",
   "version": "0.1.0",
   "description": "Detect dangerous operations in Prisma migrations",
-  "author": "Shodai Suzuki",
+  "keywords": [
+    "database",
+    "migrations",
+    "postgresql",
+    "prisma",
+    "safety"
+  ],
   "license": "MIT",
+  "author": "Shodai Suzuki",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/soartec-lab/prisma-strong-migrations.git"
   },
-  "keywords": [
-    "prisma",
-    "migrations",
-    "postgresql",
-    "database",
-    "safety"
-  ],
+  "bin": {
+    "prisma-strong-migrations": "./bin/cli.js",
+    "psm": "./bin/cli.js"
+  },
   "files": [
     "dist",
     "bin"
@@ -27,10 +31,6 @@
       "import": "./dist/index.mjs",
       "types": "./dist/index.d.mts"
     }
-  },
-  "bin": {
-    "prisma-strong-migrations": "./bin/cli.js",
-    "psm": "./bin/cli.js"
   },
   "scripts": {
     "test": "vp test",
